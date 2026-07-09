@@ -1,0 +1,457 @@
+// QPMS — Prisma schema (source of truth for the database).
+// See docs/03-database-erd.md for the narrative explanation.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  SUPERVISOR
+  SCHOOL_ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+  TRANSFERRED
+}
+
+enum AssessmentGrade {
+  EXCELLENT
+  VERY_GOOD
+  GOOD
+  FAIR
+  POOR
+}
+
+enum MistakeType {
+  TAJWEED
+  MEMORIZATION
+  PRONUNCIATION
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  SICK
+  PERMISSION
+}
+
+enum TargetScope {
+  ORGANIZATION
+  SCHOOL
+  CLASS
+}
+
+enum TargetUnit {
+  JUZ
+  SURAH
+  AYAH
+}
+
+// ---------------------------------------------------------------------------
+// Org / school structure
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schools School[]
+  users   User[]
+  terms   Term[]
+  targets Target[]
+}
+
+model School {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  location       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  classes      SchoolClass[]
+  teachers     Teacher[]
+  students     Student[]
+  users        User[]
+  targets      Target[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model SchoolClass {
+  id        String   @id @default(cuid())
+  schoolId  String
+  level     String // e.g. "P.1"
+  name      String // display name, defaults to level
+  order     Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  streams  Stream[]
+  students Student[]
+  targets  Target[]
+
+  @@unique([schoolId, level])
+  @@index([schoolId])
+}
+
+model Stream {
+  id        String   @id @default(cuid())
+  classId   String
+  name      String
+  createdAt DateTime @default(now())
+
+  schoolClass SchoolClass @relation(fields: [classId], references: [id])
+  students    Student[]
+
+  @@unique([classId, name])
+  @@index([classId])
+}
+
+// ---------------------------------------------------------------------------
+// People
+// ---------------------------------------------------------------------------
+
+model User {
+  id             String    @id @default(cuid())
+  organizationId String
+  schoolId       String?
+  role           Role
+  fullName       String
+  email          String    @unique
+  phone          String?
+  passwordHash   String
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  school        School?        @relation(fields: [schoolId], references: [id])
+  teacher       Teacher?
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  remarks       Remark[]
+  notifications Notification[]
+
+  @@index([schoolId])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  userId    String?  @unique
+  schoolId  String
+  fullName  String
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User?        @relation(fields: [userId], references: [id])
+  school          School       @relation(fields: [schoolId], references: [id])
+  assignments     Assignment[]
+  primaryStudents Student[]    @relation("PrimaryTeacher")
+
+  @@index([schoolId])
+}
+
+model Student {
+  id              String        @id @default(cuid())
+  schoolId        String
+  classId         String
+  streamId        String?
+  primaryTeacherId String?
+  admissionNo     String
+  fullName        String
+  gender          Gender?
+  guardianName    String?
+  guardianPhone   String?
+  enrollmentDate  DateTime?
+  status          StudentStatus @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  school         School       @relation(fields: [schoolId], references: [id])
+  schoolClass    SchoolClass  @relation(fields: [classId], references: [id])
+  stream         Stream?      @relation(fields: [streamId], references: [id])
+  primaryTeacher Teacher?     @relation("PrimaryTeacher", fields: [primaryTeacherId], references: [id])
+  assignments    Assignment[]
+
+  memorizations MemorizationRecord[]
+  revisions     RevisionRecord[]
+  assessments   AssessmentRecord[]
+  mistakes      MistakeRecord[]
+  attendance    AttendanceRecord[]
+  remarks       Remark[]
+
+  @@unique([schoolId, admissionNo])
+  @@index([schoolId])
+  @@index([classId])
+  @@index([streamId])
+  @@index([primaryTeacherId])
+}
+
+model Assignment {
+  id        String   @id @default(cuid())
+  teacherId String
+  classId   String?
+  streamId  String?
+  studentId String?
+  termId    String?
+  createdAt DateTime @default(now())
+
+  teacher Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  student Student? @relation(fields: [studentId], references: [id])
+
+  @@index([teacherId])
+  @@index([studentId])
+}
+
+// ---------------------------------------------------------------------------
+// Quran reference & records
+// ---------------------------------------------------------------------------
+
+model Surah {
+  id                  String  @id @default(cuid())
+  number              Int     @unique // 1..114
+  nameArabic          String
+  nameTransliteration String
+  ayahCount           Int
+  juz                 Int // primary juz the surah falls in (1..30)
+  revelationOrder     Int?
+
+  memorizations MemorizationRecord[]
+  revisions     RevisionRecord[]
+  mistakes      MistakeRecord[]
+
+  @@index([juz])
+}
+
+model MemorizationRecord {
+  id           String   @id @default(cuid())
+  studentId    String
+  surahId      String
+  fraction     Decimal  @default(1) @db.Decimal(4, 2) // 0..1 (partial allowed)
+  memorizedAt  DateTime @default(now())
+  recordedById String?
+  startAyah    Int?
+  endAyah      Int?
+  ayahCount    Int?
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  surah   Surah   @relation(fields: [surahId], references: [id])
+
+  @@unique([studentId, surahId])
+  @@index([studentId])
+  @@index([surahId])
+}
+
+model RevisionRecord {
+  id               String   @id @default(cuid())
+  studentId        String
+  surahId          String?
+  juz              Int?
+  revisedAt        DateTime @default(now())
+  performanceScore Int? // 0..100
+  recordedById     String?
+  note             String?
+  createdAt        DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  surah   Surah?  @relation(fields: [surahId], references: [id])
+
+  @@index([studentId])
+}
+
+model AssessmentRecord {
+  id           String           @id @default(cuid())
+  studentId    String
+  assessedAt   DateTime         @default(now())
+  grade        AssessmentGrade?
+  score        Int? // 0..100
+  recordedById String?
+  note         String?
+  createdAt    DateTime         @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model MistakeRecord {
+  id           String      @id @default(cuid())
+  studentId    String
+  surahId      String?
+  type         MistakeType
+  count        Int         @default(1)
+  occurredAt   DateTime    @default(now())
+  recordedById String?
+  note         String?
+  createdAt    DateTime    @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  surah   Surah?  @relation(fields: [surahId], references: [id])
+
+  @@index([studentId])
+}
+
+model AttendanceRecord {
+  id           String           @id @default(cuid())
+  studentId    String
+  date         DateTime         @db.Date
+  status       AttendanceStatus
+  recordedById String?
+  note         String?
+  createdAt    DateTime         @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@index([studentId])
+}
+
+model Remark {
+  id        String   @id @default(cuid())
+  studentId String
+  authorId  String?
+  body      String
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  author  User?   @relation(fields: [authorId], references: [id])
+
+  @@index([studentId])
+}
+
+// ---------------------------------------------------------------------------
+// Terms & targets
+// ---------------------------------------------------------------------------
+
+model Term {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  startDate      DateTime @db.Date
+  endDate        DateTime @db.Date
+  isActive       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  targets      Target[]
+
+  @@index([organizationId])
+}
+
+model Target {
+  id             String      @id @default(cuid())
+  termId         String
+  scope          TargetScope
+  organizationId String?
+  schoolId       String?
+  classId        String?
+  unit           TargetUnit
+  amount         Decimal     @db.Decimal(6, 2) // e.g. 2 = "2 Juzu"
+  description    String?
+  createdAt      DateTime    @default(now())
+
+  term         Term          @relation(fields: [termId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  school       School?       @relation(fields: [schoolId], references: [id])
+  schoolClass  SchoolClass?  @relation(fields: [classId], references: [id])
+
+  @@index([termId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications & audit
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id          String    @id @default(cuid())
+  recipientId String?
+  schoolId    String?
+  title       String
+  body        String
+  type        String    @default("INFO")
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  recipient User? @relation(fields: [recipientId], references: [id])
+
+  @@index([recipientId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String // CREATE | UPDATE | DELETE | LOGIN
+  entity    String
+  entityId  String?
+  diff      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+/// Deduplicates client-replayed mutations (offline outbox). The mobile app sends an
+/// `Idempotency-Key` header; a replay of the same key returns the original response
+/// instead of creating a duplicate record.
+model IdempotencyRecord {
+  key       String   @id
+  userId    String
+  response  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}

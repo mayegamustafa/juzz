@@ -1,0 +1,91 @@
+workflows:
+  android-teacher-app:
+    name: QPMS Teacher — Android
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      java: 17
+      vars:
+        # Override in the Codemagic UI for each environment. Never commit a real URL.
+        API_BASE_URL: "https://api.example.com/api"
+      # Add an `android_signing` group in the Codemagic UI, then uncomment:
+      # groups:
+      #   - android_signing
+      # android_signing:
+      #   - qpms_keystore
+    scripts:
+      - name: Get packages
+        working_directory: apps/mobile
+        script: flutter pub get
+
+      - name: Analyze
+        working_directory: apps/mobile
+        script: flutter analyze
+
+      - name: Test
+        working_directory: apps/mobile
+        script: flutter test
+
+      - name: Build APK + AAB
+        working_directory: apps/mobile
+        script: |
+          flutter build apk --release --dart-define=API_BASE_URL=$API_BASE_URL
+          flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - apps/mobile/build/app/outputs/**/*.apk
+      - apps/mobile/build/app/outputs/**/*.aab
+      - apps/mobile/build/**/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - mayegamus@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  ios-teacher-app:
+    name: QPMS Teacher — iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        API_BASE_URL: "https://api.example.com/api"
+        BUNDLE_ID: "com.qpms.qpmsTeacher"
+      # Requires an App Store Connect integration configured in the Codemagic UI:
+      # ios_signing:
+      #   distribution_type: app_store
+      #   bundle_identifier: com.qpms.qpmsTeacher
+    scripts:
+      - name: Get packages
+        working_directory: apps/mobile
+        script: flutter pub get
+
+      - name: Analyze & test
+        working_directory: apps/mobile
+        script: |
+          flutter analyze
+          flutter test
+
+      - name: Install pods
+        working_directory: apps/mobile/ios
+        script: pod install
+
+      # Signing is required for `flutter build ipa`. Until certificates are set up in
+      # Codemagic, this produces an unsigned .app so the build stays verifiable.
+      - name: Build iOS (no codesign)
+        working_directory: apps/mobile
+        script: flutter build ios --release --no-codesign --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - apps/mobile/build/ios/iphoneos/*.app
+      - apps/mobile/build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients:
+          - mayegamus@gmail.com
+        notify:
+          success: true
+          failure: true

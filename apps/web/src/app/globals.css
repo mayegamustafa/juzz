@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f6f7f5;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+}
+.dark {
+  --bg: #0b1220;
+  --surface: #111a2b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #1e293b;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border shadow-sm;
+    background: var(--surface);
+    border-color: var(--border);
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-700;
+  }
+  .btn-ghost {
+    @apply btn hover:bg-emerald-50 dark:hover:bg-emerald-900/30;
+    color: var(--text);
+  }
+  .btn-outline {
+    @apply btn border;
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .input {
+    @apply w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500;
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium;
+    color: var(--muted);
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}
