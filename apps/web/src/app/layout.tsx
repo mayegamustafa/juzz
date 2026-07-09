@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth';
 import { ThemeProvider } from '@/lib/theme';
+import { ToastProvider } from '@/components/Toast';
 
 export const metadata: Metadata = {
-  title: 'QPMS — Quran Progress & Memorization',
-  description: 'Multi-school Quran memorization tracking system',
+  title: 'SAK/CPS Juzz Tracking System',
+  description:
+    "Quran memorization and Juzu progress tracking across Sir Apollo Kaggwa Schools and City Parents' School",
+  icons: { icon: '/brand/sak.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <ToastProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

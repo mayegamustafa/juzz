@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, ROLE_LABELS } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import { NotificationsBell } from '@/components/NotificationsBell';
+import { BrandMark } from '@/components/Brand';
 import {
   Dashboard,
   Tracking,
@@ -19,7 +20,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  LogoMark,
 } from '@/components/icons';
 
 type IconType = ComponentType<{ size?: number; className?: string }>;
@@ -68,16 +68,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
         style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
       >
-        <div className="flex h-16 items-center gap-2.5 border-b px-5" style={{ borderColor: 'var(--border)' }}>
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white">
-            <LogoMark size={22} />
-          </span>
-          <div>
-            <p className="font-bold leading-tight text-emerald-700 dark:text-emerald-400">QPMS</p>
-            <p className="text-[10px]" style={{ color: 'var(--muted)' }}>
-              Quran Tracking
-            </p>
-          </div>
+        <div className="flex h-16 items-center border-b px-4" style={{ borderColor: 'var(--border)' }}>
+          <BrandMark />
         </div>
         <nav className="space-y-1 p-3">
           {items.map((n) => {

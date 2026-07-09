@@ -44,6 +44,21 @@ body {
     border-color: var(--border);
     color: var(--text);
   }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+  /* Small square button for inline row actions (edit / delete). */
+  .btn-icon {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors disabled:opacity-40;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+  .btn-icon:hover:not(:disabled) {
+    @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300;
+  }
+  .btn-icon-danger:hover:not(:disabled) {
+    @apply bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300;
+  }
   .input {
     @apply w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500;
     background: var(--surface);

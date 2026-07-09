@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { LogoMark } from '@/components/icons';
+import { BrandLogos, ORG_NAME } from '@/components/Brand';
 
 const DEMO = [
   ['Super Admin', 'superadmin@qpms.test'],
@@ -38,12 +38,12 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 to-gold-50 p-4 dark:from-emerald-950 dark:to-slate-900">
       <div className="card w-full max-w-md p-8">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-            <LogoMark size={32} />
+          <div className="mb-4 flex justify-center">
+            <BrandLogos size={56} />
           </div>
-          <h1 className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">QPMS</h1>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            Quran Progress &amp; Memorization
+          <h1 className="text-xl font-bold text-emerald-700 dark:text-emerald-400">Juzz Tracking System</h1>
+          <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
+            {ORG_NAME}
           </p>
         </div>
 

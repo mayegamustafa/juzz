@@ -1,4 +1,10 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -44,7 +50,9 @@ export class TeachersService {
     user: AuthUser,
     data: { fullName: string; phone?: string; schoolId?: string; email?: string; password?: string },
   ) {
-    const schoolId = isOrgWide(user) ? data.schoolId! : user.schoolId!;
+    // An org-wide caller is not bound to a school, so they must name one.
+    const schoolId = isOrgWide(user) ? data.schoolId : user.schoolId;
+    if (!schoolId) throw new BadRequestException('A school must be selected for this sheikh');
     assertSchoolAccess(user, schoolId);
 
     // Optionally create a linked login account so the sheikh can use the mobile app.

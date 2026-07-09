@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { IsInt, IsOptional, IsString } from 'class-validator';
-import { Role } from '@prisma/client';
 import { ClassesService } from './classes.service';
 import { Roles, CurrentUser, AuthUser } from '../common/decorators';
+import { ADMIN_ROLES } from '../common/scope';
 
 class CreateClassDto {
   @IsString() level!: string;
@@ -26,27 +26,33 @@ export class ClassesController {
     return this.classes.listForSchool(user, schoolId);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
+  @Roles(...ADMIN_ROLES)
   @Post('schools/:schoolId/classes')
   create(@CurrentUser() user: AuthUser, @Param('schoolId') schoolId: string, @Body() dto: CreateClassDto) {
     return this.classes.create(user, schoolId, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
+  @Roles(...ADMIN_ROLES)
   @Patch('classes/:id')
-  update(@Param('id') id: string, @Body() dto: UpdateClassDto) {
-    return this.classes.update(id, dto);
+  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateClassDto) {
+    return this.classes.update(user, id, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
+  @Roles(...ADMIN_ROLES)
   @Delete('classes/:id')
-  remove(@Param('id') id: string) {
-    return this.classes.remove(id);
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.classes.remove(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
+  @Roles(...ADMIN_ROLES)
   @Post('classes/:classId/streams')
-  createStream(@Param('classId') classId: string, @Body() dto: CreateStreamDto) {
-    return this.classes.createStream(classId, dto.name);
+  createStream(@CurrentUser() user: AuthUser, @Param('classId') classId: string, @Body() dto: CreateStreamDto) {
+    return this.classes.createStream(user, classId, dto.name);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Delete('streams/:id')
+  removeStream(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.classes.removeStream(user, id);
   }
 }

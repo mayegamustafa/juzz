@@ -183,6 +183,56 @@ export const Bell = (p: IconProps) => (
   </svg>
 );
 
+export const Close = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
+export const Pencil = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+
+export const Trash = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 6h18" />
+    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+);
+
+export const Archive = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="3" width="18" height="5" rx="1" />
+    <path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
+    <path d="M10 12h4" />
+  </svg>
+);
+
+export const Restore = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+    <path d="M3 3v5h5" />
+  </svg>
+);
+
+export const Key = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="M10.7 12.3L21 2l1 1-2 2 2 2-3 3-2-2-2 2" />
+  </svg>
+);
+
+export const Filter = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M22 3H2l8 9.5V19l4 2v-8.5L22 3Z" />
+  </svg>
+);
+
 export const Trophy = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
