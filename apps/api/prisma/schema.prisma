@@ -14,10 +14,16 @@ datasource db {
 // Enums
 // ---------------------------------------------------------------------------
 
+/// The organisation (Sir Apollo Kaggwa Schools + City Parents School) runs its
+/// schools from a central secretariat — there are no per-school administrators.
+///
+/// - SUPER_ADMIN: system owner. Everything, including user management.
+/// - SUPERVISOR:  secretariat manager / EMT. Org-wide admin powers: manages
+///                schools, sheikhs, pupils and targets across every school.
+/// - TEACHER:     a Sheikh. Records progress for the pupils on their own roster.
 enum Role {
   SUPER_ADMIN
   SUPERVISOR
-  SCHOOL_ADMIN
   TEACHER
   STUDENT
 }

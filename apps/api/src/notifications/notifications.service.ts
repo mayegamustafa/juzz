@@ -1,8 +1,7 @@
 import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../common/decorators';
-import { isOrgWide } from '../common/scope';
+import { ADMIN_ROLES } from '../common/scope';
 import { NOTIFICATION_CHANNELS, NotificationChannel } from './channels';
 
 export type NotifyInput = { recipientId: string; title: string; body: string; type?: string; schoolId?: string };
@@ -46,13 +45,11 @@ export class NotificationsService {
     user: AuthUser,
     data: { title: string; body: string; type?: string; schoolId?: string },
   ) {
-    const allowed: Role[] = [Role.SUPER_ADMIN, Role.SUPERVISOR, Role.SCHOOL_ADMIN];
-    if (!allowed.includes(user.role)) {
+    if (!ADMIN_ROLES.includes(user.role)) {
       throw new ForbiddenException('Not allowed to broadcast');
     }
-    // A school admin can only target their own school.
-    const schoolId = isOrgWide(user) ? data.schoolId : (user.schoolId ?? undefined);
-    if (!isOrgWide(user) && !schoolId) throw new ForbiddenException('No school scope');
+    // The secretariat may target one school or the whole organisation.
+    const schoolId = data.schoolId;
 
     const recipients = await this.prisma.user.findMany({
       where: {

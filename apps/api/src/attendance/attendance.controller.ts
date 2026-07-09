@@ -24,7 +24,7 @@ export class AttendanceController {
     return this.attendance.listForStudent(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
   @Put()
   upsert(@CurrentUser() user: AuthUser, @Body() dto: UpsertAttendanceDto) {
     return this.attendance.upsert(user, dto);

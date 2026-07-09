@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
-import { Role } from '@prisma/client';
 import { SchoolsService } from './schools.service';
 import { Roles, CurrentUser, AuthUser } from '../common/decorators';
+import { ADMIN_ROLES } from '../common/scope';
 
 class CreateSchoolDto {
   @IsString() code!: string;
@@ -29,21 +29,33 @@ export class SchoolsController {
     return this.schools.get(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(...ADMIN_ROLES)
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateSchoolDto) {
     return this.schools.create(user, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(...ADMIN_ROLES)
   @Patch(':id')
   update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateSchoolDto) {
     return this.schools.update(user, id, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(...ADMIN_ROLES)
+  @Post(':id/archive')
+  archive(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.schools.setArchived(user, id, true);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Post(':id/restore')
+  restore(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.schools.setArchived(user, id, false);
+  }
+
+  @Roles(...ADMIN_ROLES)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.schools.remove(id);
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.schools.remove(user, id);
   }
 }

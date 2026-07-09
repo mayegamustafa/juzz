@@ -1,19 +1,36 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Role } from '@prisma/client';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { IsBoolean, IsDateString, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { TargetScope, TargetUnit } from '@prisma/client';
 import { TargetsService } from './targets.service';
 import { Roles, CurrentUser, AuthUser } from '../common/decorators';
+import { ADMIN_ROLES } from '../common/scope';
 
 class CreateTermDto {
   @IsString() name!: string;
-  @IsString() startDate!: string;
-  @IsString() endDate!: string;
+  @IsDateString() startDate!: string;
+  @IsDateString() endDate!: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+class UpdateTermDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsDateString() startDate?: string;
+  @IsOptional() @IsDateString() endDate?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
 }
 class CreateTargetDto {
   @IsString() termId!: string;
-  @IsIn(['ORGANIZATION', 'SCHOOL', 'CLASS']) scope!: string;
-  @IsIn(['JUZ', 'SURAH', 'AYAH']) unit!: string;
-  @IsNumber() amount!: number;
+  @IsIn(['ORGANIZATION', 'SCHOOL', 'CLASS']) scope!: TargetScope;
+  @IsIn(['JUZ', 'SURAH', 'AYAH']) unit!: TargetUnit;
+  @IsNumber() @Min(0) amount!: number;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() schoolId?: string;
+  @IsOptional() @IsString() classId?: string;
+}
+class UpdateTargetDto {
+  @IsOptional() @IsString() termId?: string;
+  @IsOptional() @IsIn(['ORGANIZATION', 'SCHOOL', 'CLASS']) scope?: TargetScope;
+  @IsOptional() @IsIn(['JUZ', 'SURAH', 'AYAH']) unit?: TargetUnit;
+  @IsOptional() @IsNumber() @Min(0) amount?: number;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() schoolId?: string;
   @IsOptional() @IsString() classId?: string;
@@ -23,31 +40,59 @@ class CreateTargetDto {
 export class TargetsController {
   constructor(private readonly targets: TargetsService) {}
 
+  // ---------- terms ----------
+
   @Get('terms')
   terms(@CurrentUser() user: AuthUser) {
     return this.targets.listTerms(user);
   }
 
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(...ADMIN_ROLES)
   @Post('terms')
   createTerm(@CurrentUser() user: AuthUser, @Body() dto: CreateTermDto) {
     return this.targets.createTerm(user, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(...ADMIN_ROLES)
   @Patch('terms/:id')
-  updateTerm(@Param('id') id: string, @Body() dto: Partial<CreateTermDto> & { isActive?: boolean }) {
-    return this.targets.updateTerm(id, dto);
+  updateTerm(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateTermDto) {
+    return this.targets.updateTerm(user, id, dto);
   }
+
+  @Roles(...ADMIN_ROLES)
+  @Post('terms/:id/activate')
+  activateTerm(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.targets.activateTerm(user, id);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Delete('terms/:id')
+  removeTerm(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.targets.removeTerm(user, id);
+  }
+
+  // ---------- targets ----------
 
   @Get('targets')
-  list(@CurrentUser() user: AuthUser) {
-    return this.targets.listTargets(user);
+  list(@CurrentUser() user: AuthUser, @Query('termId') termId?: string) {
+    return this.targets.listTargets(user, termId);
   }
 
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(...ADMIN_ROLES)
   @Post('targets')
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateTargetDto) {
-    return this.targets.createTarget(user, dto as any);
+    return this.targets.createTarget(user, dto);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Patch('targets/:id')
+  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateTargetDto) {
+    return this.targets.updateTarget(user, id, dto);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Delete('targets/:id')
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.targets.removeTarget(user, id);
   }
 }

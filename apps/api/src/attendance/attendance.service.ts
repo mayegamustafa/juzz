@@ -38,15 +38,12 @@ export class AttendanceService {
   async upsert(user: AuthUser, data: { studentId: string; date: string; status: AttendanceStatus }) {
     const student = await this.prisma.student.findUnique({ where: { id: data.studentId } });
     if (!student) throw new ForbiddenException('Unknown student');
+    // A Sheikh may only mark attendance for pupils on their own roster; the
+    // secretariat may mark for anyone in the organisation.
     if (!isOrgWide(user)) {
-      if (user.role === Role.SCHOOL_ADMIN && student.schoolId !== user.schoolId) {
-        throw new ForbiddenException('Different school');
-      }
-      if (user.role === Role.TEACHER) {
-        const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
-        if (!teacher || student.primaryTeacherId !== teacher.id) {
-          throw new ForbiddenException('Student is not in your roster');
-        }
+      const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
+      if (!teacher || student.primaryTeacherId !== teacher.id) {
+        throw new ForbiddenException('Student is not in your roster');
       }
     }
     const day = new Date(data.date);

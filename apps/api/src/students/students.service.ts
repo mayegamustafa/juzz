@@ -13,8 +13,7 @@ export class StudentsService {
   /** Builds the visibility filter for the current user. */
   private async baseWhere(user: AuthUser): Promise<Prisma.StudentWhereInput> {
     if (isOrgWide(user)) return { school: { organizationId: user.organizationId } };
-    if (user.role === Role.SCHOOL_ADMIN) return { schoolId: user.schoolId ?? '__none__' };
-    // TEACHER: only assigned students
+    // TEACHER: only the pupils on their own roster
     const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
     return { primaryTeacherId: teacher?.id ?? '__none__' };
   }

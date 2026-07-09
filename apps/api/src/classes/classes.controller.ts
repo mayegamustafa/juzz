@@ -26,25 +26,25 @@ export class ClassesController {
     return this.classes.listForSchool(user, schoolId);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Post('schools/:schoolId/classes')
   create(@CurrentUser() user: AuthUser, @Param('schoolId') schoolId: string, @Body() dto: CreateClassDto) {
     return this.classes.create(user, schoolId, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Patch('classes/:id')
   update(@Param('id') id: string, @Body() dto: UpdateClassDto) {
     return this.classes.update(id, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Delete('classes/:id')
   remove(@Param('id') id: string) {
     return this.classes.remove(id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Post('classes/:classId/streams')
   createStream(@Param('classId') classId: string, @Body() dto: CreateStreamDto) {
     return this.classes.createStream(classId, dto.name);

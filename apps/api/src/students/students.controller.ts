@@ -42,19 +42,19 @@ export class StudentsController {
     return this.students.progress(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateStudentDto) {
     return this.students.create(user, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: Partial<CreateStudentDto>) {
     return this.students.update(id, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.students.remove(id);

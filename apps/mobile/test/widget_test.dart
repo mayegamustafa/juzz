@@ -6,11 +6,10 @@ void main() {
     SessionUser withRole(String role) =>
         SessionUser(id: '1', email: 'a@b.c', fullName: 'Test', role: role);
 
-    test('teachers and admins may record; supervisors and students may not', () {
+    test('sheikhs and the secretariat may record; pupils may not', () {
       expect(withRole('TEACHER').canRecord, isTrue);
-      expect(withRole('SCHOOL_ADMIN').canRecord, isTrue);
+      expect(withRole('SUPERVISOR').canRecord, isTrue);
       expect(withRole('SUPER_ADMIN').canRecord, isTrue);
-      expect(withRole('SUPERVISOR').canRecord, isFalse);
       expect(withRole('STUDENT').canRecord, isFalse);
     });
   });

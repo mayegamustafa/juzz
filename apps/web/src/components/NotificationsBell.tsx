@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Bell } from '@/components/icons';
 
-const canBroadcast = (role?: string) => role === 'SUPER_ADMIN' || role === 'SUPERVISOR' || role === 'SCHOOL_ADMIN';
+const canBroadcast = (role?: string) => role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
 
 interface Notification {
   id: string;

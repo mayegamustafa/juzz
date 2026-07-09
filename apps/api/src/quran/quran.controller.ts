@@ -66,13 +66,13 @@ export class QuranController {
     return this.quran.grid(user, { classId, streamId, juz: parseJuz(juz) });
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
   @Put('quran/memorization')
   upsert(@CurrentUser() user: AuthUser, @Body() dto: MemorizationDto) {
     return this.quran.upsertMemorization(user, dto);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
   @Post('quran/memorization/bulk')
   bulk(@CurrentUser() user: AuthUser, @Body() dto: BulkMemorizationDto) {
     return this.quran.bulkMemorization(user, dto.items);
@@ -83,7 +83,7 @@ export class QuranController {
     return this.quran.listRemarks(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
   @Post('students/:id/remarks')
   addRemark(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: RemarkDto) {
     return this.quran.addRemark(user, id, dto.body);
@@ -95,7 +95,7 @@ export class QuranController {
     return this.quran.listRevisions(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
   @Post('quran/revision')
   addRevision(@CurrentUser() user: AuthUser, @Body() dto: RevisionDto) {
     return this.quran.addRevision(user, dto);
@@ -107,7 +107,7 @@ export class QuranController {
     return this.quran.listAssessments(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
   @Post('quran/assessment')
   addAssessment(@CurrentUser() user: AuthUser, @Body() dto: AssessmentDto) {
     return this.quran.addAssessment(user, dto);
@@ -119,7 +119,7 @@ export class QuranController {
     return this.quran.listMistakes(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
   @Post('quran/mistakes')
   addMistake(@CurrentUser() user: AuthUser, @Body() dto: MistakeDto) {
     return this.quran.addMistake(user, dto);

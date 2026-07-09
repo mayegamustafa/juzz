@@ -20,12 +20,9 @@ export class QuranService {
   private async assertCanWrite(user: AuthUser, studentId: string) {
     const student = await this.prisma.student.findUnique({ where: { id: studentId } });
     if (!student) throw new ForbiddenException('Unknown student');
-    if (isOrgWide(user)) return student; // (supervisors are read-only at controller level)
-    if (user.role === Role.SCHOOL_ADMIN) {
-      if (student.schoolId !== user.schoolId) throw new ForbiddenException('Different school');
-      return student;
-    }
-    // TEACHER
+    // The secretariat (super admin / supervisor) may correct any pupil's record.
+    if (isOrgWide(user)) return student;
+    // A Sheikh may only record for pupils on their own roster.
     const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
     if (!teacher || student.primaryTeacherId !== teacher.id) {
       throw new ForbiddenException('Student is not in your roster');
@@ -58,8 +55,6 @@ export class QuranService {
     // scope
     if (isOrgWide(user)) {
       studentWhere.school = { organizationId: user.organizationId };
-    } else if (user.role === Role.SCHOOL_ADMIN) {
-      studentWhere.schoolId = user.schoolId ?? '__none__';
     } else {
       const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
       studentWhere.primaryTeacherId = teacher?.id ?? '__none__';

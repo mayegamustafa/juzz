@@ -46,12 +46,16 @@ export const useAuth = () => useContext(Ctx);
 
 export const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
-  SUPERVISOR: 'Supervisor',
-  SCHOOL_ADMIN: 'School Admin',
-  TEACHER: 'Sheikh / Teacher',
-  STUDENT: 'Student',
+  SUPERVISOR: 'Manager / EMT',
+  TEACHER: 'Sheikh',
+  STUDENT: 'Pupil',
 };
 
-export const canEdit = (role?: string) =>
-  role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN' || role === 'TEACHER';
-export const isAdmin = (role?: string) => role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN';
+/**
+ * The secretariat (super admin + manager/EMT) administers the organisation.
+ * A Sheikh records progress but manages nothing.
+ */
+export const isAdmin = (role?: string) => role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
+
+/** Who may record pupil progress. */
+export const canEdit = (role?: string) => isAdmin(role) || role === 'TEACHER';

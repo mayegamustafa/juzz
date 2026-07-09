@@ -35,7 +35,8 @@ class SessionUser {
         'schoolName': schoolName,
       };
 
-  bool get canRecord => role == 'TEACHER' || role == 'SCHOOL_ADMIN' || role == 'SUPER_ADMIN';
+  /// Sheikhs record progress; the secretariat may also correct records.
+  bool get canRecord => role == 'TEACHER' || role == 'SUPERVISOR' || role == 'SUPER_ADMIN';
 }
 
 class Surah {

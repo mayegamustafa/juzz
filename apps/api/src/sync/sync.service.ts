@@ -15,7 +15,6 @@ export class SyncService {
 
   private async studentScope(user: AuthUser): Promise<Prisma.StudentWhereInput> {
     if (isOrgWide(user)) return { school: { organizationId: user.organizationId } };
-    if (user.role === Role.SCHOOL_ADMIN) return { schoolId: user.schoolId ?? '__none__' };
     const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
     return { primaryTeacherId: teacher?.id ?? '__none__' };
   }

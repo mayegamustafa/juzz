@@ -10,7 +10,7 @@ export interface SessionUser {
   id: string;
   email: string;
   fullName: string;
-  role: 'SUPER_ADMIN' | 'SUPERVISOR' | 'SCHOOL_ADMIN' | 'TEACHER' | 'STUDENT';
+  role: 'SUPER_ADMIN' | 'SUPERVISOR' | 'TEACHER' | 'STUDENT';
   organizationId: string;
   schoolId: string | null;
   schoolName?: string | null;

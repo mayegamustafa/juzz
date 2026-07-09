@@ -36,8 +36,8 @@ const NAV: NavItem[] = [
   { href: '/tracking', label: 'Tracking', icon: Tracking },
   { href: '/attendance', label: 'Attendance', icon: Calendar },
   { href: '/students', label: 'Students', icon: Students },
-  { href: '/teachers', label: 'Teachers', icon: Teachers, roles: ['SUPER_ADMIN', 'SUPERVISOR', 'SCHOOL_ADMIN'] },
-  { href: '/schools', label: 'Schools', icon: SchoolIcon, roles: ['SUPER_ADMIN', 'SUPERVISOR', 'SCHOOL_ADMIN'] },
+  { href: '/teachers', label: 'Teachers', icon: Teachers, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
+  { href: '/schools', label: 'Schools', icon: SchoolIcon, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
   { href: '/reports', label: 'Reports', icon: Reports },
   { href: '/targets', label: 'Targets', icon: Target, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
 ];

@@ -38,7 +38,7 @@ export class NotificationsController {
     return this.notifications.markAllRead(user);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)
   @Post('broadcast')
   broadcast(@CurrentUser() user: AuthUser, @Body() dto: BroadcastDto) {
     return this.notifications.broadcast(user, dto);

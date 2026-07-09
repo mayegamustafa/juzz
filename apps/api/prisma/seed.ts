@@ -57,7 +57,7 @@ async function main() {
   const org = await prisma.organization.upsert({
     where: { code: 'SAK' },
     update: {},
-    create: { code: 'SAK', name: 'SAK Schools Organization' },
+    create: { code: 'SAK', name: 'Sir Apollo Kaggwa Schools & City Parents School' },
   });
 
   // --- Surahs (114) ---
@@ -161,12 +161,14 @@ async function main() {
   }
   console.log(`  CPS P.1 students: ${studentCount} (with memorization records)`);
 
-  // --- Users (one per role) ---
+  // --- Users ---
+  // The organisation runs its schools from a central secretariat: the manager (EMT)
+  // is a SUPERVISOR with org-wide powers. There are no per-school administrators.
   const pwd = await argon2.hash('Password123!');
   const users: { email: string; role: Role; fullName: string; schoolId?: string }[] = [
     { email: 'superadmin@qpms.test', role: Role.SUPER_ADMIN, fullName: 'Super Admin' },
-    { email: 'supervisor@qpms.test', role: Role.SUPERVISOR, fullName: 'Org Supervisor' },
-    { email: 'admin.cps@qpms.test', role: Role.SCHOOL_ADMIN, fullName: 'CPS Administrator', schoolId: cpsId },
+    { email: 'supervisor@qpms.test', role: Role.SUPERVISOR, fullName: 'Secretariat Manager' },
+    { email: 'manager@qpms.test', role: Role.SUPERVISOR, fullName: 'EMT Manager' },
     { email: 'nyombi@qpms.test', role: Role.TEACHER, fullName: 'Sheikh Nyombi', schoolId: cpsId },
   ];
   for (const u of users) {
