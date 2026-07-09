@@ -1,9 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { Workbook } from 'exceljs';
+import { Workbook, Worksheet } from 'exceljs';
 import PDFDocument from 'pdfkit';
 
-const EMERALD = '#047857';
-const GOLD = '#B8860B';
+import {
+  APP_NAME,
+  ORG_NAME,
+  EMERALD,
+  EMERALD_DARK,
+  GOLD,
+  GREY,
+  ZEBRA,
+  INK,
+  logos,
+  logosSmall,
+  fmtDate,
+  fmtDateTime,
+} from './brand';
+
+/** Image handles embedded once per PDF document and reused on every page. */
+type PdfMarks = { sak: unknown | null; cps: unknown | null };
 
 type GeneralData = {
   schools: { id: string; code: string; name: string; enrolled: number }[];
@@ -12,56 +27,112 @@ type GeneralData = {
 
 type StudentReport = Awaited<ReturnType<import('./reports.service').ReportsService['student']>>;
 
-function fmtDate(d: Date | string | null): string {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
+const MARGIN = 40;
+const HEADER_H = 76;
+const FOOTER_H = 34;
 
 @Injectable()
 export class ExportService {
-  // ---------- Excel ----------
-  async generalXlsx(data: GeneralData, level: string): Promise<Buffer> {
-    const wb = new Workbook();
-    wb.creator = 'QPMS';
-    const ws = wb.addWorksheet(`GENERAL ${level}`);
+  // ==================== Excel ====================
 
-    const header = ['Surah', ...data.schools.map((s) => s.code), 'TOTAL'];
-    ws.addRow([`QPMS — GENERAL roll-up · ${level}`]);
-    ws.addRow([`Generated ${fmtDate(new Date())}`]);
+  /** Branded title block above every sheet's data. */
+  private xlsxHeader(wb: Workbook, ws: Worksheet, title: string, subtitle?: string) {
+    const { sak, cps } = logos();
+    if (sak) {
+      const id = wb.addImage({ buffer: sak as any, extension: 'png' });
+      ws.addImage(id, { tl: { col: 0.1, row: 0.1 }, ext: { width: 42, height: 42 } });
+    }
+    if (cps) {
+      const id = wb.addImage({ buffer: cps as any, extension: 'png' });
+      ws.addImage(id, { tl: { col: 0.85, row: 0.1 }, ext: { width: 42, height: 42 } });
+    }
+
+    ws.getRow(1).height = 20;
+    ws.getRow(2).height = 16;
+
+    const t = ws.getCell('C1');
+    t.value = title;
+    t.font = { bold: true, size: 14, color: { argb: 'FF047857' } };
+
+    const s = ws.getCell('C2');
+    s.value = subtitle ?? ORG_NAME;
+    s.font = { size: 9, color: { argb: 'FF6B7280' } };
+
+    const g = ws.getCell('C3');
+    g.value = `${APP_NAME} · generated ${fmtDateTime(new Date())}`;
+    g.font = { size: 8, italic: true, color: { argb: 'FF9CA3AF' } };
+
     ws.addRow([]);
-    const headerRow = ws.addRow(header);
-    headerRow.eachCell((c) => {
+    ws.addRow([]);
+    ws.addRow([]);
+    ws.addRow([]);
+  }
+
+  private styleHeaderRow(ws: Worksheet, rowNumber: number, cols: number) {
+    const row = ws.getRow(rowNumber);
+    for (let i = 1; i <= cols; i++) {
+      const c = row.getCell(i);
       c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF047857' } };
-      c.alignment = { horizontal: 'center' };
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.border = { bottom: { style: 'thin', color: { argb: 'FFB8860B' } } };
+    }
+    row.height = 18;
+  }
+
+  async generalXlsx(data: GeneralData, level: string): Promise<Buffer> {
+    const wb = new Workbook();
+    wb.creator = APP_NAME;
+    wb.created = new Date();
+
+    const ws = wb.addWorksheet(`GENERAL ${level}`, {
+      pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
     });
 
+    this.xlsxHeader(wb, ws, `GENERAL roll-up — ${level}`, 'Pupils who have memorized each surah, per school');
+
+    const header = ['Surah', ...data.schools.map((s) => s.code), 'TOTAL'];
+    const headerRow = ws.addRow(header);
+    this.styleHeaderRow(ws, headerRow.number, header.length);
+
     for (const r of data.rows) {
-      ws.addRow([`${r.surah.number}. ${r.surah.name}`, ...data.schools.map((s) => r.perSchool[s.id] ?? 0), r.total]);
+      const row = ws.addRow([
+        `${r.surah.number}. ${r.surah.name}`,
+        ...data.schools.map((s) => r.perSchool[s.id] ?? 0),
+        r.total,
+      ]);
+      row.getCell(header.length).font = { bold: true };
+      for (let i = 2; i <= header.length; i++) row.getCell(i).alignment = { horizontal: 'center' };
     }
+
+    // Enrolment context under the table so the counts can be read as a ratio.
+    ws.addRow([]);
+    const enrol = ws.addRow(['Enrolled', ...data.schools.map((s) => s.enrolled), '']);
+    enrol.font = { italic: true, color: { argb: 'FF6B7280' } };
+
     ws.getColumn(1).width = 28;
-    for (let i = 2; i <= header.length; i++) ws.getColumn(i).width = 8;
-    ws.views = [{ state: 'frozen', xSplit: 1, ySplit: 4 }];
+    for (let i = 2; i <= header.length; i++) ws.getColumn(i).width = 9;
+    ws.views = [{ state: 'frozen', xSplit: 1, ySplit: headerRow.number }];
+    ws.autoFilter = { from: { row: headerRow.number, column: 1 }, to: { row: headerRow.number, column: header.length } };
+
     return (await wb.xlsx.writeBuffer()) as unknown as Buffer;
   }
 
   async studentXlsx(rep: StudentReport): Promise<Buffer> {
     const wb = new Workbook();
-    wb.creator = 'QPMS';
-    const title = (ws: any, text: string) => {
-      const row = ws.addRow([text]);
-      row.font = { bold: true, size: 12, color: { argb: 'FF047857' } };
-    };
+    wb.creator = APP_NAME;
+    wb.created = new Date();
 
+    // --- Summary ---
     const info = wb.addWorksheet('Summary');
-    title(info, `Student Report — ${rep.student.fullName}`);
-    info.addRow([]);
+    this.xlsxHeader(wb, info, `Pupil Report — ${rep.student.fullName}`, `${rep.student.school} · ${rep.student.level}`);
+
     const pairs: [string, string | number][] = [
       ['Admission No', rep.student.admissionNo],
       ['School', `${rep.student.school} (${rep.student.schoolCode})`],
       ['Class', `${rep.student.className} · ${rep.student.level}`],
       ['Stream', rep.student.stream ?? '—'],
-      ['Teacher', rep.student.teacher ?? '—'],
+      ['Sheikh', rep.student.teacher ?? '—'],
       ['Guardian', `${rep.student.guardianName ?? '—'} ${rep.student.guardianPhone ?? ''}`.trim()],
       ['Status', rep.student.status],
       ['', ''],
@@ -76,165 +147,345 @@ export class ExportService {
       row.getCell(1).font = { bold: true };
     }
     info.getColumn(1).width = 22;
-    info.getColumn(2).width = 36;
+    info.getColumn(2).width = 40;
 
-    const memo = wb.addWorksheet('Memorization');
-    memo.addRow(['Surah', 'Juz', 'Ayah from', 'Ayah to', 'Date']).font = { bold: true };
-    rep.memorizations.forEach((m) => memo.addRow([m.surah, m.juz, m.ayahFrom ?? '', m.ayahTo ?? '', fmtDate(m.date)]));
-    memo.getColumn(1).width = 28;
+    const sheet = (name: string, headers: string[], rows: (string | number)[][], widths: number[]) => {
+      const ws = wb.addWorksheet(name);
+      this.xlsxHeader(wb, ws, `${name} — ${rep.student.fullName}`);
+      const hr = ws.addRow(headers);
+      this.styleHeaderRow(ws, hr.number, headers.length);
+      rows.forEach((r) => ws.addRow(r));
+      widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
+      ws.views = [{ state: 'frozen', ySplit: hr.number }];
+    };
 
-    const rev = wb.addWorksheet('Revision');
-    rev.addRow(['Surah / Juz', 'Score', 'Date']).font = { bold: true };
-    rep.revisions.forEach((r) => rev.addRow([r.surah, r.score ?? '', fmtDate(r.date)]));
-    rev.getColumn(1).width = 28;
-
-    const ass = wb.addWorksheet('Assessment');
-    ass.addRow(['Grade', 'Score', 'Date']).font = { bold: true };
-    rep.assessments.forEach((a) => ass.addRow([a.grade ?? '', a.score ?? '', fmtDate(a.date)]));
-
-    const att = wb.addWorksheet('Attendance');
-    att.addRow(['Date', 'Status']).font = { bold: true };
-    rep.attendances.forEach((a) => att.addRow([fmtDate(a.date), a.status]));
+    sheet(
+      'Memorization',
+      ['Surah', 'Juz', 'Ayah from', 'Ayah to', 'Date'],
+      rep.memorizations.map((m) => [m.surah, m.juz, m.ayahFrom ?? '', m.ayahTo ?? '', fmtDate(m.date)]),
+      [28, 8, 12, 12, 16],
+    );
+    sheet(
+      'Revision',
+      ['Surah / Juz', 'Score', 'Date'],
+      rep.revisions.map((r) => [r.surah, r.score ?? '', fmtDate(r.date)]),
+      [28, 10, 16],
+    );
+    sheet(
+      'Assessment',
+      ['Grade', 'Score', 'Date'],
+      rep.assessments.map((a) => [a.grade ?? '', a.score ?? '', fmtDate(a.date)]),
+      [18, 10, 16],
+    );
+    sheet(
+      'Attendance',
+      ['Date', 'Status'],
+      rep.attendances.map((a) => [fmtDate(a.date), a.status]),
+      [16, 16],
+    );
 
     return (await wb.xlsx.writeBuffer()) as unknown as Buffer;
   }
 
-  // ---------- PDF ----------
-  private renderPdf(build: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> {
+  // ==================== PDF ====================
+
+  /**
+   * `bufferPages` lets us stamp footers after the body is laid out, once the
+   * total page count is known.
+   */
+  private renderPdf(
+    build: (doc: PDFKit.PDFDocument) => void,
+    opts: { landscape?: boolean } = {},
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const doc = new PDFDocument({
+        size: 'A4',
+        layout: opts.landscape ? 'landscape' : 'portrait',
+        margin: MARGIN,
+        bufferPages: true,
+        info: { Title: APP_NAME, Author: ORG_NAME },
+      });
+
       const chunks: Buffer[] = [];
       doc.on('data', (c) => chunks.push(c as Buffer));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
-      this.brandHeader(doc);
+
+      // Embed each crest once and reuse the handle. Calling doc.image(buffer)
+      // per page re-embeds the bytes and bloats a 4-page report to ~1.4 MB.
+      // `openImage` exists in pdfkit but is missing from @types/pdfkit.
+      const open = (doc as unknown as { openImage(b: Buffer): unknown }).openImage.bind(doc);
+      const small = logosSmall();
+      const marks: PdfMarks = {
+        sak: small.sak ? open(small.sak) : null,
+        cps: small.cps ? open(small.cps) : null,
+      };
+
+      // Every page gets the brand band, including ones pdfkit adds implicitly.
+      doc.on('pageAdded', () => this.pdfHeader(doc, marks));
+      this.pdfHeader(doc, marks);
+
       build(doc);
+      this.pdfFooters(doc);
       doc.end();
     });
   }
 
-  private brandHeader(doc: PDFKit.PDFDocument) {
-    doc.rect(0, 0, doc.page.width, 60).fill(EMERALD);
-    doc.fillColor('#FFFFFF').fontSize(18).font('Helvetica-Bold').text('QPMS', 40, 18);
+  private pdfHeader(doc: PDFKit.PDFDocument, marks: PdfMarks) {
+    const { sak, cps } = marks;
+    const w = doc.page.width;
+
+    doc.save();
+    doc.rect(0, 0, w, HEADER_H).fill(EMERALD);
+    doc.rect(0, HEADER_H - 3, w, 3).fill(GOLD);
+
+    // Crests sit on white chips: both are crimson and vanish against emerald.
+    const y = 14;
+    if (sak) {
+      doc.roundedRect(MARGIN, y, 48, 48, 6).fill('#FFFFFF');
+      doc.image(sak as any, MARGIN + 4, y + 4, { fit: [40, 40] });
+    }
+    if (cps) {
+      doc.roundedRect(w - MARGIN - 48, y, 48, 48, 6).fill('#FFFFFF');
+      doc.image(cps as any, w - MARGIN - 44, y + 4, { fit: [40, 40] });
+    }
+
     doc
-      .fontSize(9)
+      .fillColor('#FFFFFF')
+      .font('Helvetica-Bold')
+      .fontSize(15)
+      .text(APP_NAME, MARGIN + 60, 22, { width: w - 2 * MARGIN - 120, align: 'center' });
+    doc
       .font('Helvetica')
+      .fontSize(8.5)
       .fillColor('#D1FAE5')
-      .text('Quran Progress & Memorization Management System', 40, 40);
-    doc.fillColor('#000000').moveDown(2);
-    doc.y = 80;
+      .text(ORG_NAME, MARGIN + 60, 42, { width: w - 2 * MARGIN - 120, align: 'center' });
+
+    doc.restore();
+    doc.fillColor(INK);
+    doc.x = MARGIN;
+    doc.y = HEADER_H + 16;
+  }
+
+  /** Page numbers + timestamp, stamped once the page count is final. */
+  private pdfFooters(doc: PDFKit.PDFDocument) {
+    const range = doc.bufferedPageRange();
+    const generated = fmtDateTime(new Date());
+
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      const w = doc.page.width;
+      const h = doc.page.height;
+
+      // The footer sits below the bottom margin. pdfkit would treat that as an
+      // overflow and silently append a blank page, so suspend the margin while
+      // we write into the footer band.
+      const bottomMargin = doc.page.margins.bottom;
+      doc.page.margins.bottom = 0;
+
+      doc.save();
+      doc
+        .moveTo(MARGIN, h - FOOTER_H)
+        .lineTo(w - MARGIN, h - FOOTER_H)
+        .strokeColor('#E5E7EB')
+        .lineWidth(0.5)
+        .stroke();
+
+      doc.font('Helvetica').fontSize(7.5).fillColor(GREY);
+      doc.text(`${APP_NAME} · generated ${generated}`, MARGIN, h - FOOTER_H + 11, { lineBreak: false });
+      doc.text(`Page ${i - range.start + 1} of ${range.count}`, w - MARGIN - 120, h - FOOTER_H + 11, {
+        width: 120,
+        align: 'right',
+        lineBreak: false,
+      });
+      doc.restore();
+
+      doc.page.margins.bottom = bottomMargin;
+    }
   }
 
   private sectionTitle(doc: PDFKit.PDFDocument, text: string) {
-    doc.moveDown(0.6);
-    doc.fontSize(12).font('Helvetica-Bold').fillColor(EMERALD).text(text);
-    doc.moveTo(40, doc.y + 2).lineTo(doc.page.width - 40, doc.y + 2).strokeColor(GOLD).lineWidth(1).stroke();
-    doc.moveDown(0.4).fillColor('#000000').font('Helvetica').fontSize(9);
+    if (doc.y + 40 > doc.page.height - FOOTER_H - 10) doc.addPage();
+    doc.moveDown(0.5);
+    doc.font('Helvetica-Bold').fontSize(11.5).fillColor(EMERALD_DARK).text(text, MARGIN, doc.y);
+    const y = doc.y + 2;
+    doc.moveTo(MARGIN, y).lineTo(doc.page.width - MARGIN, y).strokeColor(GOLD).lineWidth(1).stroke();
+    doc.moveDown(0.5);
+    doc.fillColor(INK).font('Helvetica').fontSize(9);
   }
 
-  /** Simple fixed-column table. */
-  private table(doc: PDFKit.PDFDocument, headers: string[], widths: number[], rows: (string | number)[][]) {
-    const left = 40;
-    const rowH = 16;
-    const draw = (cells: (string | number)[], bold: boolean, fill?: string) => {
-      if (doc.y + rowH > doc.page.height - 50) {
-        doc.addPage();
-        doc.y = 50;
-      }
+  /** Fixed-column table. Headers repeat on every page it spills onto. */
+  private table(
+    doc: PDFKit.PDFDocument,
+    headers: string[],
+    widths: number[],
+    rows: (string | number)[][],
+    align: ('left' | 'center')[] = [],
+  ) {
+    const rowH = 15.5;
+    const tableW = widths.reduce((a, b) => a + b, 0);
+    const bottom = doc.page.height - FOOTER_H - 8;
+
+    const drawRow = (cells: (string | number)[], header: boolean, zebra = false) => {
       const y = doc.y;
-      if (fill) doc.rect(left, y, widths.reduce((a, b) => a + b, 0), rowH).fill(fill);
-      doc.fillColor(bold ? '#FFFFFF' : '#111111').font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(8.5);
-      let x = left;
+      if (header) {
+        doc.rect(MARGIN, y, tableW, rowH).fill(EMERALD);
+      } else if (zebra) {
+        doc.rect(MARGIN, y, tableW, rowH).fill(ZEBRA);
+      }
+      doc
+        .fillColor(header ? '#FFFFFF' : INK)
+        .font(header ? 'Helvetica-Bold' : 'Helvetica')
+        .fontSize(8);
+
+      let x = MARGIN;
       cells.forEach((c, i) => {
-        doc.text(String(c ?? ''), x + 4, y + 4, { width: widths[i] - 6, ellipsis: true, lineBreak: false });
+        doc.text(String(c ?? ''), x + 4, y + 4.5, {
+          width: widths[i] - 8,
+          align: align[i] ?? (i === 0 ? 'left' : 'center'),
+          ellipsis: true,
+          lineBreak: false,
+        });
         x += widths[i];
       });
       doc.y = y + rowH;
     };
-    draw(headers, true, EMERALD);
-    rows.forEach((r, i) => draw(r, false, i % 2 ? '#F3F4F6' : undefined));
+
+    drawRow(headers, true);
+    rows.forEach((r, i) => {
+      if (doc.y + rowH > bottom) {
+        doc.addPage(); // pageAdded re-draws the header band and resets doc.y
+        drawRow(headers, true);
+      }
+      drawRow(r, false, i % 2 === 1);
+    });
   }
 
   async generalPdf(data: GeneralData, level: string): Promise<Buffer> {
-    return this.renderPdf((doc) => {
-      doc.fontSize(14).font('Helvetica-Bold').text(`GENERAL roll-up — ${level}`);
-      doc.fontSize(9).font('Helvetica').fillColor('#6B7280').text(`Generated ${fmtDate(new Date())}`);
-      doc.fillColor('#000000');
-      this.sectionTitle(doc, 'Students who memorized each surah, per school');
+    // Many school columns — landscape keeps them legible.
+    const landscape = data.schools.length > 6;
 
-      const codes = data.schools.map((s) => s.code);
-      const surahW = 150;
-      const totalW = 40;
-      const avail = doc.page.width - 80 - surahW - totalW;
-      const schoolW = Math.max(24, Math.floor(avail / Math.max(1, codes.length)));
-      const headers = ['Surah', ...codes, 'TOT'];
-      const widths = [surahW, ...codes.map(() => schoolW), totalW];
-      const rows = data.rows.map((r) => [
-        `${r.surah.number}. ${r.surah.name}`,
-        ...data.schools.map((s) => r.perSchool[s.id] ?? 0),
-        r.total,
-      ]);
-      this.table(doc, headers, widths, rows);
-    });
+    return this.renderPdf(
+      (doc) => {
+        doc.font('Helvetica-Bold').fontSize(13).fillColor(INK).text(`GENERAL roll-up — ${level}`);
+        doc
+          .font('Helvetica')
+          .fontSize(8.5)
+          .fillColor(GREY)
+          .text(`Pupils who have memorized each surah, per school · ${data.schools.length} schools`);
+        doc.fillColor(INK);
+
+        this.sectionTitle(doc, 'Memorization by surah');
+
+        const codes = data.schools.map((s) => s.code);
+        const usable = doc.page.width - 2 * MARGIN;
+        const surahW = Math.min(160, usable * 0.32);
+        const totalW = 44;
+        const schoolW = Math.max(26, Math.floor((usable - surahW - totalW) / Math.max(1, codes.length)));
+
+        this.table(
+          doc,
+          ['Surah', ...codes, 'TOTAL'],
+          [surahW, ...codes.map(() => schoolW), totalW],
+          data.rows.map((r) => [
+            `${r.surah.number}. ${r.surah.name}`,
+            ...data.schools.map((s) => r.perSchool[s.id] ?? 0),
+            r.total,
+          ]),
+        );
+
+        this.sectionTitle(doc, 'Enrolment');
+        doc.font('Helvetica').fontSize(8.5).fillColor(GREY);
+        doc.text(data.schools.map((s) => `${s.code}: ${s.enrolled}`).join('    '), { width: usable });
+      },
+      { landscape },
+    );
   }
 
   async studentPdf(rep: StudentReport): Promise<Buffer> {
     return this.renderPdf((doc) => {
-      doc.fontSize(15).font('Helvetica-Bold').text(rep.student.fullName);
+      const usable = doc.page.width - 2 * MARGIN;
+      const s = rep.summary;
+
+      doc.font('Helvetica-Bold').fontSize(15).fillColor(INK).text(rep.student.fullName);
       doc
-        .fontSize(9)
         .font('Helvetica')
-        .fillColor('#6B7280')
+        .fontSize(9)
+        .fillColor(GREY)
         .text(
           `${rep.student.school} · ${rep.student.className} (${rep.student.level})` +
             (rep.student.stream ? ` · ${rep.student.stream}` : '') +
             ` · Adm ${rep.student.admissionNo}`,
         );
-      doc.fillColor('#000000');
+      doc.fillColor(INK);
 
-      this.sectionTitle(doc, 'Summary');
-      const s = rep.summary;
-      const att = Object.entries(s.attendance).map(([k, v]) => `${k} ${v}`).join('  ') || '—';
-      const lines = [
-        `Memorized: ${s.memorized}/${s.target} surahs  (${s.percent}%)`,
-        `Revisions: ${s.revisions}    Assessments: ${s.assessments}    Avg score: ${s.avgScore ?? '—'}`,
+      // Progress bar — the headline number of the whole report.
+      this.sectionTitle(doc, 'Overall progress');
+      const barY = doc.y + 2;
+      const barW = usable;
+      const pct = Math.max(0, Math.min(100, s.percent));
+      doc.roundedRect(MARGIN, barY, barW, 12, 6).fill('#E5E7EB');
+      if (pct > 0) doc.roundedRect(MARGIN, barY, (barW * pct) / 100, 12, 6).fill(pct >= 100 ? GOLD : EMERALD);
+      doc.y = barY + 18;
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor(INK)
+        .text(`${s.memorized} of ${s.target} surahs memorized  ·  ${s.percent}%`);
+
+      doc.moveDown(0.4);
+      const att = Object.entries(s.attendance)
+        .map(([k, v]) => `${k[0]}${k.slice(1).toLowerCase()} ${v}`)
+        .join('   ') || '—';
+      doc.font('Helvetica').fontSize(9).fillColor(INK);
+      [
+        `Revisions: ${s.revisions}     Assessments: ${s.assessments}     Average score: ${s.avgScore ?? '—'}`,
         `Total mistakes: ${s.mistakes}`,
         `Attendance: ${att}`,
-        `Guardian: ${rep.student.guardianName ?? '—'} ${rep.student.guardianPhone ?? ''}`,
-        `Teacher: ${rep.student.teacher ?? '—'}`,
-      ];
-      doc.fontSize(9.5).font('Helvetica');
-      lines.forEach((l) => doc.text(l));
+        `Sheikh: ${rep.student.teacher ?? '—'}     Guardian: ${rep.student.guardianName ?? '—'} ${rep.student.guardianPhone ?? ''}`,
+      ].forEach((l) => doc.text(l));
 
       this.sectionTitle(doc, `Memorization (${rep.memorizations.length})`);
       if (rep.memorizations.length) {
         this.table(
           doc,
           ['Surah', 'Juz', 'From', 'To', 'Date'],
-          [200, 50, 50, 50, 100],
-          rep.memorizations.map((m) => [m.surah, m.juz, m.ayahFrom ?? '', m.ayahTo ?? '', fmtDate(m.date)]),
+          [usable - 260, 50, 60, 60, 90],
+          rep.memorizations.map((m) => [m.surah, m.juz, m.ayahFrom ?? '—', m.ayahTo ?? '—', fmtDate(m.date)]),
         );
-      } else doc.text('No records.');
+      } else doc.font('Helvetica').fontSize(9).fillColor(GREY).text('No records.');
 
       this.sectionTitle(doc, `Revision (${rep.revisions.length})`);
       if (rep.revisions.length) {
         this.table(
           doc,
           ['Surah / Juz', 'Score', 'Date'],
-          [250, 80, 120],
-          rep.revisions.map((r) => [r.surah, r.score ?? '', fmtDate(r.date)]),
+          [usable - 190, 80, 110],
+          rep.revisions.map((r) => [r.surah, r.score ?? '—', fmtDate(r.date)]),
         );
-      } else doc.text('No records.');
+      } else doc.font('Helvetica').fontSize(9).fillColor(GREY).text('No records.');
 
       this.sectionTitle(doc, `Assessments (${rep.assessments.length})`);
       if (rep.assessments.length) {
         this.table(
           doc,
           ['Grade', 'Score', 'Date'],
-          [200, 80, 120],
-          rep.assessments.map((a) => [a.grade ?? '', a.score ?? '', fmtDate(a.date)]),
+          [usable - 190, 80, 110],
+          rep.assessments.map((a) => [(a.grade ?? '—').replace('_', ' '), a.score ?? '—', fmtDate(a.date)]),
         );
-      } else doc.text('No records.');
+      } else doc.font('Helvetica').fontSize(9).fillColor(GREY).text('No records.');
+
+      // Signature block: these reports get printed and signed by the Sheikh.
+      if (doc.y + 90 > doc.page.height - FOOTER_H) doc.addPage();
+      doc.moveDown(2);
+      const y = doc.y;
+      const colW = (usable - 40) / 2;
+      doc.strokeColor('#9CA3AF').lineWidth(0.5);
+      doc.moveTo(MARGIN, y + 26).lineTo(MARGIN + colW, y + 26).stroke();
+      doc.moveTo(MARGIN + colW + 40, y + 26).lineTo(MARGIN + 2 * colW + 40, y + 26).stroke();
+      doc.font('Helvetica').fontSize(8).fillColor(GREY);
+      doc.text("Sheikh's signature", MARGIN, y + 30, { width: colW });
+      doc.text('Manager / EMT', MARGIN + colW + 40, y + 30, { width: colW });
     });
   }
 }

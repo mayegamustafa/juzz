@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { ReportsService } from './reports.service';
 import { ExportService } from './export.service';
+import { AnalyticsService } from './analytics.service';
 import { CurrentUser, AuthUser } from '../common/decorators';
 
 function parseJuz(juz?: string): number[] | undefined {
@@ -18,6 +19,7 @@ export class ReportsController {
   constructor(
     private readonly reports: ReportsService,
     private readonly exporter: ExportService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Get('reports/general')
@@ -74,6 +76,15 @@ export class ReportsController {
   @Get('analytics/dashboard')
   dashboard(@CurrentUser() user: AuthUser) {
     return this.reports.dashboard(user);
+  }
+
+  @Get('analytics/overview')
+  overview(
+    @CurrentUser() user: AuthUser,
+    @Query('schoolId') schoolId?: string,
+    @Query('level') level?: string,
+  ) {
+    return this.analytics.overview(user, { schoolId, level });
   }
 
   @Get('leaderboards')

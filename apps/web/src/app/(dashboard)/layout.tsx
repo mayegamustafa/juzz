@@ -15,6 +15,7 @@ import {
   Teachers,
   SchoolIcon,
   Reports,
+  Download,
   Target,
   Menu,
   Sun,
@@ -38,7 +39,8 @@ const NAV: NavItem[] = [
   { href: '/students', label: 'Students', icon: Students },
   { href: '/teachers', label: 'Teachers', icon: Teachers, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
   { href: '/schools', label: 'Schools', icon: SchoolIcon, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
-  { href: '/reports', label: 'Reports', icon: Reports },
+  { href: '/analytics', label: 'Analytics', icon: Reports },
+  { href: '/reports', label: 'Reports', icon: Download },
   { href: '/targets', label: 'Targets', icon: Target, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
 ];
 

@@ -39,7 +39,20 @@ Incremental delivery. Each milestone ends with something runnable and reviewable
 - ✅ GENERAL roll-up export (PDF + Excel, branded, server-streamed with auth).
 - ✅ Student report export (PDF + multi-sheet Excel: summary, memorization, revision, assessment, attendance).
 - ✅ Dashboard KPIs + per-school progress + Top-students leaderboard wired in.
-- ⏳ Trend charts over time, teacher/class comparison reports.
+- ✅ Branded PDFs: both school crests, repeating table headers, page numbers,
+  signature block. Logos embedded once per doc (a 4-page report went 1.4 MB → 30 KB).
+- ✅ Analytics screen: KPIs, progress distribution, roll-ups by school / sheikh / class,
+  weakest surahs, and an at-risk pupil list (below 25% of target).
+- ⏳ Trend charts over time (needs dated snapshots).
+
+## Milestone 10 — Organisation model ✅
+The org (Sir Apollo Kaggwa Schools + City Parents' School) runs its schools from a
+central secretariat, so `SCHOOL_ADMIN` was removed. `SUPERVISOR` — the manager / EMT —
+is now the org-wide administrator, and a `TEACHER` (Sheikh) records for their own roster.
+- ✅ Full CRUD from the admin panel: schools (+ classes + streams), sheikhs, pupils, terms, targets.
+- ✅ Pagination, search and filters on every list.
+- ✅ Destructive deletes refuse to orphan records and explain why.
+- ✅ Rebranded to **SAK/CPS Juzz Tracking System** with both school crests.
 
 ## Milestone 7 — Notifications ✅ / ⏳
 - ✅ In-app notifications: per-recipient fan-out broadcast, unread count, mark read/read-all, RBAC.
