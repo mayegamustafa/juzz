@@ -80,11 +80,35 @@ workflows:
 
           # Fail loudly rather than ship a debug-signed APK, which would not
           # install over an existing release-signed install.
+          #
+          # Verify with apksigner, not `keytool -printcert -jarfile`: keytool
+          # only reads the legacy v1 JAR signature, which current AGP no longer
+          # writes, so it reports a correctly v2/v3-signed APK as unsigned.
           APK=build/app/outputs/flutter-apk/app-release.apk
-          keytool -printcert -jarfile "$APK" | grep -E "Owner:|SHA256:" || {
-            echo "APK is not signed. Check the juzz_keystore signing identity." >&2
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/share/android-sdk}}"
+          APKSIGNER=$(find "$SDK_ROOT/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
+
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner not found under $SDK_ROOT; cannot verify the signature." >&2
             exit 1
-          }
+          fi
+
+          # Non-zero exit here means genuinely unsigned, and set -e stops the build.
+          "$APKSIGNER" verify --print-certs "$APK"
+
+          # Every release must use the one keystore, or Android treats the next
+          # update as a different app and refuses to install it over this one.
+          EXPECTED=6bc225c89626954459c9458370746bb818e1caf2d98b825a7ae289b6759e1366
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" \
+            | grep -i "SHA-256 digest" | head -1 | awk '{print $NF}' | tr 'A-F' 'a-f')
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "WARNING: signed with an unexpected certificate." >&2
+            echo "  expected $EXPECTED" >&2
+            echo "  actual   $ACTUAL" >&2
+            echo "Installs signed with the previous key will NOT accept this as an update." >&2
+          else
+            echo "Signature matches the expected release keystore."
+          fi
 
     artifacts:
       - apps/mobile/build/app/outputs/flutter-apk/app-release.apk

@@ -74,8 +74,12 @@ just skips publishing, so you can fall back to the manual path below.
    `versionCode`, and the version name becomes `1.0.<build number>`.
 2. `flutter analyze` and `flutter test` run; failures stop the build.
 3. The APK is built and signed with `juzz_keystore`. The build then reads the
-   APK's certificate back and fails if it is unsigned, so a debug-signed APK can
-   never reach a Sheikh.
+   certificate back with `apksigner` and fails if the APK is unsigned, so a
+   debug-signed one can never reach a Sheikh. It also compares the certificate
+   against the fingerprint pinned in `codemagic.yaml` and warns on a mismatch,
+   since a silent key change is what breaks updates. **If you ever rotate the
+   keystore, update that `EXPECTED` value** — and expect every existing install
+   to need a manual reinstall.
 4. The APK is attached to a GitHub release tagged `v1.0.<build number>`, giving
    it a stable public download URL.
 5. The build signs in to the API and `POST`s the new version to `/app-release`.
