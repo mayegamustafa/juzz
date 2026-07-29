@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { useAuth, isAdmin } from '@/lib/auth';
 import { StatCard, Spinner, PageHeader, ProgressBar } from '@/components/ui';
 import { Trophy } from '@/components/icons';
 
@@ -18,6 +18,12 @@ interface Dashboard {
   };
   bySchool: { code: string; name: string; percent: number; students: number }[];
 }
+interface StaffRow {
+  id: string;
+  name: string;
+  students: number;
+  avgPercent: number;
+}
 interface LeaderRow {
   id: string;
   fullName: string;
@@ -31,7 +37,9 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<Dashboard | null>(null);
   const [leaders, setLeaders] = useState<LeaderRow[]>([]);
+  const [staff, setStaff] = useState<StaffRow[]>([]);
   const [error, setError] = useState('');
+  const admin = isAdmin(user?.role);
 
   useEffect(() => {
     api
@@ -43,6 +51,15 @@ export default function DashboardPage() {
       .then((rows) => setLeaders(rows.slice(0, 8)))
       .catch(() => undefined);
   }, []);
+
+  // Staff standings are a management view, so only the secretariat loads them.
+  useEffect(() => {
+    if (!admin) return;
+    api
+      .get<{ bySheikh: StaffRow[] }>('/analytics/overview')
+      .then((d) => setStaff(d.bySheikh ?? []))
+      .catch(() => undefined);
+  }, [admin]);
 
   if (error) return <p className="text-red-600">{error}</p>;
   if (!data) return <Spinner />;
@@ -59,6 +76,8 @@ export default function DashboardPage() {
         <StatCard label="Avg. Progress" value={`${kpis.avgPercent}%`} hint={`of ${kpis.target} surahs (2 Juzu)`} />
         <StatCard label="Shks & Shkts" value={kpis.teacherCount} />
       </div>
+
+      {admin && staff.length > 0 && <StaffPerformance rows={staff} />}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {bySchool.length > 0 && (
@@ -85,7 +104,7 @@ export default function DashboardPage() {
             <span className="text-gold-500">
               <Trophy size={18} />
             </span>
-            Top students
+            Top pupils
           </h2>
           {leaders.length === 0 ? (
             <p className="text-sm" style={{ color: 'var(--muted)' }}>
@@ -121,6 +140,47 @@ export default function DashboardPage() {
             </ol>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * How each Shk and Shkt's roster is performing, best average first.
+ * The secretariat's view of their staff, which is a different question from
+ * the pupil leaderboard beside it.
+ */
+function StaffPerformance({ rows }: { rows: StaffRow[] }) {
+  // Scaled against the leader rather than 100%, so the spread stays legible
+  // early in a term when every average is still low.
+  const best = rows[0]?.avgPercent ?? 0;
+
+  return (
+    <div className="card mt-6 p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-semibold">Shk / Shkt performance</h2>
+        <Link href="/analytics" className="text-xs text-emerald-600 hover:underline">
+          Full analytics
+        </Link>
+      </div>
+      <div className="space-y-3">
+        {rows.map((r, i) => (
+          <div key={r.id} className="flex items-center gap-3">
+            <span
+              className="w-5 shrink-0 text-xs font-bold"
+              style={i === 0 ? {} : { color: 'var(--muted)' }}
+            >
+              {i + 1}
+            </span>
+            <span className="w-40 shrink-0 truncate text-sm font-medium">{r.name}</span>
+            <div className="flex-1">
+              <ProgressBar percent={best === 0 ? 0 : (r.avgPercent / best) * 100} />
+            </div>
+            <span className="w-28 shrink-0 text-right text-xs" style={{ color: 'var(--muted)' }}>
+              {r.avgPercent}% · {r.students} {r.students === 1 ? 'pupil' : 'pupils'}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

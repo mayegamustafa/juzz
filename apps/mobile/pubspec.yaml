@@ -74,6 +74,8 @@ flutter:
 
   assets:
     - assets/icon/icon_mark_white.png
+    - assets/icon/badge_sak.png
+    - assets/icon/badge_cps.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
