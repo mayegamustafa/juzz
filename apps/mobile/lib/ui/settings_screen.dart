@@ -116,10 +116,17 @@ class SettingsScreen extends ConsumerWidget {
           ),
 
           const _SectionHeader('About'),
-          ListTile(
-            leading: const Icon(Icons.info_outline_rounded),
-            title: const Text(AppConfig.appName),
-            subtitle: const Text('Quran Progress & Memorization Management'),
+          const ListTile(
+            leading: Icon(Icons.info_outline_rounded),
+            title: Text(AppConfig.appName),
+            subtitle: Text('Theology Department'),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              '© ${DateTime.now().year} ${AppConfig.copyrightHolder}. All rights reserved.',
+              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
           ),
 
           const SizedBox(height: 12),

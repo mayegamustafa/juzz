@@ -10,6 +10,10 @@ export const LETTERHEAD_TITLE = 'Sir Apollo Kaggwa Schools - Since 1996';
 export const LETTERHEAD_MOTTO = '"Where your child is guaranteed a first grade"';
 export const LETTERHEAD_DEPARTMENT = 'Theology Department';
 
+/** The system is the school's property; the footer credits the school, not the app. */
+export const COPYRIGHT_HOLDER = 'Sir Apollo Kaggwa Schools';
+export const COPYRIGHT = `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}. All rights reserved.`;
+
 /**
  * The two school crests. Both are crimson, so they sit on a light chip rather
  * than the emerald surface — otherwise they fight the app's palette.

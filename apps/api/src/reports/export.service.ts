@@ -9,6 +9,7 @@ import {
   LETTERHEAD_MOTTO,
   LETTERHEAD_DEPARTMENT,
   letterheadSchoolLine,
+  copyrightLine,
   EMERALD,
   EMERALD_DARK,
   GOLD,
@@ -93,7 +94,7 @@ export class ExportService {
     s.getCell(1).font = { size: 9, color: { argb: 'FF6B7280' } };
 
     const g = ws.addRow([]);
-    g.getCell(1).value = `${APP_NAME} · generated ${fmtDateTime(new Date())}`;
+    g.getCell(1).value = `${copyrightLine()} · generated ${fmtDateTime(new Date())}`;
     g.getCell(1).font = { size: 8, italic: true, color: { argb: 'FF9CA3AF' } };
 
     ws.addRow([]);
@@ -355,7 +356,7 @@ export class ExportService {
         .stroke();
 
       doc.font('Helvetica').fontSize(7.5).fillColor(GREY);
-      doc.text(`${APP_NAME} · generated ${generated}`, MARGIN, h - FOOTER_H + 11, { lineBreak: false });
+      doc.text(`${copyrightLine()} · generated ${generated}`, MARGIN, h - FOOTER_H + 11, { lineBreak: false });
       doc.text(`Page ${i - range.start + 1} of ${range.count}`, w - MARGIN - 120, h - FOOTER_H + 11, {
         width: 120,
         align: 'right',

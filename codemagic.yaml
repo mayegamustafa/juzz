@@ -1,19 +1,24 @@
 workflows:
   android-teacher-app:
-    name: QPMS Teacher — Android
+    name: Juzz Tracking - Android
     instance_type: linux_x2
     max_build_duration: 60
     environment:
       flutter: stable
       java: 17
-      vars:
-        # Override in the Codemagic UI for each environment. Never commit a real URL.
-        API_BASE_URL: "https://api.example.com/api"
-      # Add an `android_signing` group in the Codemagic UI, then uncomment:
-      # groups:
-      #   - android_signing
-      # android_signing:
-      #   - qpms_keystore
+      groups:
+        # Create these variable groups in the Codemagic UI (Settings >
+        # Environment variables). See docs/mobile-releases.md for what goes in
+        # each one. Never commit real values.
+        - juzz_release      # API_BASE_URL, PUBLISH_API_URL, PUBLISH_EMAIL, PUBLISH_PASSWORD
+        - juzz_github       # GITHUB_TOKEN, GITHUB_REPO
+      android_signing:
+        # Upload the keystore once under Codemagic > Code signing identities >
+        # Android keystores, using this reference name. Every build must use the
+        # SAME keystore: Android refuses to install an update over an existing
+        # app if the signature changed, which would force Sheikhs to uninstall
+        # and lose their offline data.
+        - juzz_keystore
     scripts:
       - name: Get packages
         working_directory: apps/mobile
@@ -27,16 +32,101 @@ workflows:
         working_directory: apps/mobile
         script: flutter test
 
-      - name: Build APK + AAB
+      # Codemagic increments PROJECT_BUILD_NUMBER on every build of this
+      # workflow. Using it as the Android versionCode is what makes each APK
+      # count as newer than the last: Android will not install an APK whose
+      # versionCode is not greater than the one already installed.
+      - name: Build signed APK
         working_directory: apps/mobile
         script: |
-          flutter build apk --release --dart-define=API_BASE_URL=$API_BASE_URL
-          flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL
+          set -e
+          BUILD_NUMBER=$PROJECT_BUILD_NUMBER
+          VERSION_NAME="1.0.$BUILD_NUMBER"
+          echo "Building versionCode=$BUILD_NUMBER versionName=$VERSION_NAME"
+
+          flutter build apk --release \
+            --build-number="$BUILD_NUMBER" \
+            --build-name="$VERSION_NAME" \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
+
+          # Fail loudly rather than ship a debug-signed APK, which would not
+          # install over an existing release-signed install.
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          keytool -printcert -jarfile "$APK" | grep -E "Owner:|SHA256:" || {
+            echo "APK is not signed. Check the juzz_keystore signing identity." >&2
+            exit 1
+          }
+
     artifacts:
-      - apps/mobile/build/app/outputs/**/*.apk
-      - apps/mobile/build/app/outputs/**/*.aab
+      - apps/mobile/build/app/outputs/flutter-apk/app-release.apk
       - apps/mobile/build/**/mapping.txt
+
     publishing:
+      scripts:
+        # Attach the APK to a GitHub release so it has a stable public download
+        # URL, then tell the API about it. Sheikhs are prompted to update the
+        # next time they open the app; installing over the old app keeps their
+        # data and login, because the signing key is unchanged.
+        - name: Publish release and notify the API
+          script: |
+            set -e
+            BUILD_NUMBER=$PROJECT_BUILD_NUMBER
+            VERSION_NAME="1.0.$BUILD_NUMBER"
+            TAG="v$VERSION_NAME"
+            APK="$CM_BUILD_DIR/apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
+
+            if [ -z "$GITHUB_TOKEN" ] || [ -z "$PUBLISH_PASSWORD" ]; then
+              echo "Publishing credentials not set; skipping."
+              echo "Download the APK from this build and publish it from the Teacher app admin page."
+              exit 0
+            fi
+
+            # 1. Create the GitHub release.
+            curl -sS -X POST "https://api.github.com/repos/$GITHUB_REPO/releases" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -d "{\"tag_name\":\"$TAG\",\"name\":\"$TAG\",\"body\":\"Automated build $BUILD_NUMBER\"}" \
+              -o /tmp/release.json
+
+            UPLOAD_URL=$(grep -o '"upload_url": *"[^"]*' /tmp/release.json | head -1 | cut -d'"' -f4 | sed 's/{.*}//')
+            if [ -z "$UPLOAD_URL" ]; then
+              echo "Could not create the GitHub release:" >&2
+              cat /tmp/release.json >&2
+              exit 1
+            fi
+
+            # 2. Upload the APK as a release asset.
+            curl -sS -X POST "$UPLOAD_URL?name=juzz-tracking-$VERSION_NAME.apk" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/vnd.android.package-archive" \
+              --data-binary @"$APK" -o /tmp/asset.json
+
+            DOWNLOAD_URL=$(grep -o '"browser_download_url": *"[^"]*' /tmp/asset.json | head -1 | cut -d'"' -f4)
+            if [ -z "$DOWNLOAD_URL" ]; then
+              echo "APK upload failed:" >&2
+              cat /tmp/asset.json >&2
+              exit 1
+            fi
+            echo "APK published at $DOWNLOAD_URL"
+
+            # 3. Register the release with the API so the app offers the update.
+            TOKEN=$(curl -sS -X POST "$PUBLISH_API_URL/auth/login" \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"$PUBLISH_EMAIL\",\"password\":\"$PUBLISH_PASSWORD\"}" \
+              | grep -o '"accessToken": *"[^"]*' | cut -d'"' -f4)
+
+            if [ -z "$TOKEN" ]; then
+              echo "Could not sign in to the API to publish the release." >&2
+              exit 1
+            fi
+
+            curl -sS -X POST "$PUBLISH_API_URL/app-release" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"versionCode\":$BUILD_NUMBER,\"versionName\":\"$VERSION_NAME\",\"downloadUrl\":\"$DOWNLOAD_URL\",\"releaseNotes\":\"Automated build $BUILD_NUMBER\",\"mandatory\":false}"
+
+            echo "Release $VERSION_NAME published. Sheikhs are offered it on next app open."
+
       email:
         recipients:
           - mayegamus@gmail.com
@@ -45,15 +135,16 @@ workflows:
           failure: true
 
   ios-teacher-app:
-    name: QPMS Teacher — iOS
+    name: Juzz Tracking - iOS
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        - juzz_release
       vars:
-        API_BASE_URL: "https://api.example.com/api"
         BUNDLE_ID: "com.qpms.qpmsTeacher"
       # Requires an App Store Connect integration configured in the Codemagic UI:
       # ios_signing:
@@ -64,7 +155,7 @@ workflows:
         working_directory: apps/mobile
         script: flutter pub get
 
-      - name: Analyze & test
+      - name: Analyze and test
         working_directory: apps/mobile
         script: |
           flutter analyze
@@ -74,11 +165,15 @@ workflows:
         working_directory: apps/mobile/ios
         script: pod install
 
-      # Signing is required for `flutter build ipa`. Until certificates are set up in
-      # Codemagic, this produces an unsigned .app so the build stays verifiable.
+      # Signing is required for `flutter build ipa`. Until certificates are set up
+      # in Codemagic, this produces an unsigned .app so the build stays verifiable.
       - name: Build iOS (no codesign)
         working_directory: apps/mobile
-        script: flutter build ios --release --no-codesign --dart-define=API_BASE_URL=$API_BASE_URL
+        script: |
+          flutter build ios --release --no-codesign \
+            --build-number="$PROJECT_BUILD_NUMBER" \
+            --build-name="1.0.$PROJECT_BUILD_NUMBER" \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
     artifacts:
       - apps/mobile/build/ios/iphoneos/*.app
       - apps/mobile/build/ios/ipa/*.ipa

@@ -15,5 +15,9 @@ class AppConfig {
   /// How often the outbox retries while the device is online.
   static const syncInterval = Duration(seconds: 30);
 
-  static const appName = 'QPMS Teacher';
+  static const appName = 'SAK/CPS Juzz Tracking';
+
+  /// The system belongs to the school, so anything user-visible credits the
+  /// school rather than the app.
+  static const copyrightHolder = 'Sir Apollo Kaggwa Schools';
 }

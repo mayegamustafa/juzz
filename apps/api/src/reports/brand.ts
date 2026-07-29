@@ -15,6 +15,12 @@ export function letterheadSchoolLine(schoolName?: string | null): string {
   return schoolName ?? 'All Schools';
 }
 
+/** Printed reports are the school's documents, so the footer credits the school. */
+export const COPYRIGHT_HOLDER = 'Sir Apollo Kaggwa Schools';
+export function copyrightLine(): string {
+  return `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}`;
+}
+
 export const EMERALD = '#047857';
 export const EMERALD_DARK = '#065F46';
 export const GOLD = '#B8860B';
