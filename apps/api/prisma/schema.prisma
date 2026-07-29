@@ -74,6 +74,7 @@ enum TargetScope {
   ORGANIZATION
   SCHOOL
   CLASS
+  STUDENT
 }
 
 enum TargetUnit {
@@ -249,6 +250,7 @@ model Student {
   mistakes      MistakeRecord[]
   attendance    AttendanceRecord[]
   remarks       Remark[]
+  targets       Target[]
 
   @@unique([schoolId, admissionNo])
   @@index([schoolId])
@@ -436,8 +438,9 @@ model Target {
   organizationId String?
   schoolId       String?
   classId        String?
+  studentId      String?
   unit           TargetUnit
-  amount         Decimal     @db.Decimal(6, 2) // e.g. 2 = "2 Juzu"
+  amount         Decimal     @db.Decimal(6, 2) // e.g. 2 = "2 Juzu", or a specific Surah/Ayah count
   description    String?
   createdAt      DateTime    @default(now())
 
@@ -445,8 +448,10 @@ model Target {
   organization Organization? @relation(fields: [organizationId], references: [id])
   school       School?       @relation(fields: [schoolId], references: [id])
   schoolClass  SchoolClass?  @relation(fields: [classId], references: [id])
+  student      Student?      @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([termId])
+  @@index([studentId])
 }
 
 // ---------------------------------------------------------------------------

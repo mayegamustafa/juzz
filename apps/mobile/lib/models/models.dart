@@ -292,6 +292,53 @@ class AppNotification {
       );
 }
 
+/// A memorization goal for the active term — set by the secretariat, either
+/// for the whole organisation/school/class, or aimed at one pupil by name
+/// (e.g. "memorize Surah Al-Mulk"). Read-only on mobile; assigning one is an
+/// office task done from the web admin.
+class StudentTarget {
+  final String id;
+  final String scope;
+  final String unit;
+  final double amount;
+  final String? description;
+  final String termName;
+
+  const StudentTarget({
+    required this.id,
+    required this.scope,
+    required this.unit,
+    required this.amount,
+    this.description,
+    required this.termName,
+  });
+
+  factory StudentTarget.fromJson(Map<String, dynamic> j) => StudentTarget(
+        id: j['id'] as String,
+        scope: j['scope'] as String? ?? 'CLASS',
+        unit: j['unit'] as String? ?? 'JUZ',
+        amount: double.tryParse('${j['amount']}') ?? 0,
+        description: j['description'] as String?,
+        termName: (j['term'] as Map<String, dynamic>?)?['name'] as String? ?? '',
+      );
+
+  String get unitLabel => switch (unit) {
+        'JUZ' => 'Juzu',
+        'SURAH' => 'Surah(s)',
+        'AYAH' => 'Ayah(s)',
+        _ => unit,
+      };
+
+  String get scopeLabel => switch (scope) {
+        'STUDENT' => 'Personal goal',
+        'ORGANIZATION' => 'Organisation goal',
+        'SCHOOL' => 'School goal',
+        _ => 'Class goal',
+      };
+
+  String get amountLabel => amount == amount.roundToDouble() ? amount.toInt().toString() : amount.toString();
+}
+
 class RecordEntry {
   final String id;
   final String label;

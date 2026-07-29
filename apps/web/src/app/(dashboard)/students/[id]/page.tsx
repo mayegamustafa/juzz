@@ -35,6 +35,14 @@ interface Remark {
   author: { fullName: string } | null;
   canEdit: boolean;
 }
+interface StudentTarget {
+  id: string;
+  scope: 'ORGANIZATION' | 'SCHOOL' | 'CLASS' | 'STUDENT';
+  unit: 'JUZ' | 'SURAH' | 'AYAH';
+  amount: string;
+  description: string | null;
+  term: { name: string; isActive: boolean };
+}
 
 export default function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +51,7 @@ export default function StudentDetailPage() {
   const canManage = isAdmin(user?.role);
   const toast = useToast();
   const [s, setS] = useState<StudentDetail | null>(null);
+  const [targets, setTargets] = useState<StudentTarget[]>([]);
   const [remarks, setRemarks] = useState<Remark[]>([]);
   const [newRemark, setNewRemark] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,6 +72,7 @@ export default function StudentDetailPage() {
   const load = () => {
     api.get<StudentDetail>(`/students/${id}`).then(setS);
     api.get<Remark[]>(`/students/${id}/remarks`).then(setRemarks);
+    api.get<StudentTarget[]>(`/students/${id}/targets`).then(setTargets).catch(() => setTargets([]));
   };
   useEffect(load, [id]);
 
@@ -170,6 +180,35 @@ export default function StudentDetailPage() {
         </div>
       </div>
 
+      {/* Targets for the active term */}
+      <div className="card mt-4 p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold">This term&apos;s targets</h2>
+          {canManage && (
+            <Link href="/targets" className="text-xs text-emerald-600 hover:underline">
+              Manage targets
+            </Link>
+          )}
+        </div>
+        {targets.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>
+            No target set for the active term yet.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {targets.map((t) => (
+              <span
+                key={t.id}
+                className="badge bg-gold-200 text-gold-800"
+                title={t.description ?? undefined}
+              >
+                {t.scope === 'STUDENT' ? 'Personal goal' : scopeWord(t.scope)}: {Number(t.amount)} {unitWord(t.unit)}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Revision / Assessment / Mistakes / Attendance */}
       <StudentRecords studentId={s.id} editable={editable} />
 
@@ -247,6 +286,13 @@ export default function StudentDetailPage() {
       />
     </div>
   );
+}
+
+function unitWord(u: StudentTarget['unit']) {
+  return u === 'JUZ' ? 'Juzu' : u === 'SURAH' ? 'Surah(s)' : 'Ayah(s)';
+}
+function scopeWord(s: StudentTarget['scope']) {
+  return s === 'ORGANIZATION' ? 'Organisation goal' : s === 'SCHOOL' ? 'School goal' : 'Class goal';
 }
 
 function Field({ label, value }: { label: string; value: string }) {

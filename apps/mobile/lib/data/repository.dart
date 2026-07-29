@@ -245,6 +245,19 @@ class Repository {
         );
       });
 
+  Future<List<StudentTarget>> targets(String studentId) async {
+    final cacheKey = 'tgt_$studentId';
+    try {
+      final data = await _api.get('/students/$studentId/targets') as List;
+      await _db.putCache(cacheKey, data);
+      return data.map((e) => StudentTarget.fromJson(e as Map<String, dynamic>)).toList();
+    } on OfflineException {
+      final cached = await _db.getCache(cacheKey) as List?;
+      if (cached == null) return const [];
+      return cached.map((e) => StudentTarget.fromJson((e as Map).cast<String, dynamic>())).toList();
+    }
+  }
+
   Future<List<RecordEntry>> attendanceHistory(String studentId) async =>
       _entries('/attendance/student/$studentId', 'att_$studentId', (j) {
         final d = DateTime.tryParse('${j['date']}') ?? DateTime.now();

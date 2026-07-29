@@ -19,21 +19,23 @@ class UpdateTermDto {
 }
 class CreateTargetDto {
   @IsString() termId!: string;
-  @IsIn(['ORGANIZATION', 'SCHOOL', 'CLASS']) scope!: TargetScope;
+  @IsIn(['ORGANIZATION', 'SCHOOL', 'CLASS', 'STUDENT']) scope!: TargetScope;
   @IsIn(['JUZ', 'SURAH', 'AYAH']) unit!: TargetUnit;
   @IsNumber() @Min(0) amount!: number;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() schoolId?: string;
   @IsOptional() @IsString() classId?: string;
+  @IsOptional() @IsString() studentId?: string;
 }
 class UpdateTargetDto {
   @IsOptional() @IsString() termId?: string;
-  @IsOptional() @IsIn(['ORGANIZATION', 'SCHOOL', 'CLASS']) scope?: TargetScope;
+  @IsOptional() @IsIn(['ORGANIZATION', 'SCHOOL', 'CLASS', 'STUDENT']) scope?: TargetScope;
   @IsOptional() @IsIn(['JUZ', 'SURAH', 'AYAH']) unit?: TargetUnit;
   @IsOptional() @IsNumber() @Min(0) amount?: number;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() schoolId?: string;
   @IsOptional() @IsString() classId?: string;
+  @IsOptional() @IsString() studentId?: string;
 }
 
 @Controller()
@@ -76,6 +78,11 @@ export class TargetsController {
   @Get('targets')
   list(@CurrentUser() user: AuthUser, @Query('termId') termId?: string) {
     return this.targets.listTargets(user, termId);
+  }
+
+  @Get('students/:studentId/targets')
+  forStudent(@CurrentUser() user: AuthUser, @Param('studentId') studentId: string) {
+    return this.targets.targetsForStudent(user, studentId);
   }
 
   @Roles(...ADMIN_ROLES)

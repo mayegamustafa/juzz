@@ -186,8 +186,51 @@ class _Header extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
+          _TargetsRow(studentId: student.id),
         ],
       ),
+    );
+  }
+}
+
+/// This term's memorization goals for the pupil — the class/school-wide ones
+/// they inherit, plus any Surah/Ayah goal aimed at them by name. Set by the
+/// secretariat on the web admin; shown here read-only so the Sheikh knows
+/// what to work toward.
+class _TargetsRow extends ConsumerWidget {
+  final String studentId;
+  const _TargetsRow({required this.studentId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<List<StudentTarget>>(
+      future: ref.read(repositoryProvider).targets(studentId),
+      builder: (context, snap) {
+        final items = snap.data ?? const <StudentTarget>[];
+        if (items.isEmpty) return const SizedBox.shrink();
+        final scheme = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: items.map((t) {
+              final chip = Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Brand.gold.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${t.scopeLabel}: ${t.amountLabel} ${t.unitLabel}',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.onSurface),
+                ),
+              );
+              return t.description == null ? chip : Tooltip(message: t.description!, child: chip);
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 }

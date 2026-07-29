@@ -18,13 +18,14 @@ interface Term {
 }
 interface Target {
   id: string;
-  scope: 'ORGANIZATION' | 'SCHOOL' | 'CLASS';
+  scope: 'ORGANIZATION' | 'SCHOOL' | 'CLASS' | 'STUDENT';
   unit: 'JUZ' | 'SURAH' | 'AYAH';
   amount: string;
   description: string | null;
   term: { id: string; name: string; isActive: boolean };
   school: { id: string; code: string; name: string } | null;
   schoolClass: { id: string; name: string; level: string } | null;
+  student: { id: string; fullName: string; admissionNo: string } | null;
 }
 interface School {
   id: string;
@@ -34,6 +35,11 @@ interface School {
 interface SchoolClass {
   id: string;
   name: string;
+}
+interface StudentOption {
+  id: string;
+  fullName: string;
+  admissionNo: string;
 }
 
 const iso = (d: string) => d.slice(0, 10);
@@ -46,6 +52,7 @@ const EMPTY_TARGET = {
   description: '',
   schoolId: '',
   classId: '',
+  studentId: '',
 };
 
 export default function TargetsPage() {
@@ -57,6 +64,7 @@ export default function TargetsPage() {
   const [targets, setTargets] = useState<Target[] | null>(null);
   const [schools, setSchools] = useState<School[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [students, setStudents] = useState<StudentOption[]>([]);
 
   const [termForm, setTermForm] = useState(EMPTY_TERM);
   const [termOpen, setTermOpen] = useState(false);
@@ -82,9 +90,10 @@ export default function TargetsPage() {
     if (canManage) api.get<School[]>('/schools').then(setSchools).catch(() => undefined);
   }, [load, canManage]);
 
-  // Class list only matters for class-scoped targets.
+  // Class list matters for class-scoped targets, and for narrowing the pupil
+  // picker when scope is student-scoped.
   useEffect(() => {
-    if (targetForm.scope !== 'CLASS' || !targetForm.schoolId) {
+    if ((targetForm.scope !== 'CLASS' && targetForm.scope !== 'STUDENT') || !targetForm.schoolId) {
       setClasses([]);
       return;
     }
@@ -96,6 +105,21 @@ export default function TargetsPage() {
       })
       .catch(() => setClasses([]));
   }, [targetForm.scope, targetForm.schoolId]);
+
+  // Pupil list only matters for student-scoped targets.
+  useEffect(() => {
+    if (targetForm.scope !== 'STUDENT' || !targetForm.classId) {
+      setStudents([]);
+      return;
+    }
+    api
+      .get<{ data: StudentOption[] }>(`/students?classId=${targetForm.classId}&pageSize=200`)
+      .then((res) => {
+        setStudents(res.data);
+        setTargetForm((f) => (res.data.some((s) => s.id === f.studentId) ? f : { ...f, studentId: res.data[0]?.id ?? '' }));
+      })
+      .catch(() => setStudents([]));
+  }, [targetForm.scope, targetForm.classId]);
 
   // ---- terms ----
   const saveTerm = async () => {
@@ -167,10 +191,19 @@ export default function TargetsPage() {
       description: t.description ?? '',
       schoolId: t.school?.id ?? schools[0]?.id ?? '',
       classId: t.schoolClass?.id ?? '',
+      studentId: t.student?.id ?? '',
     });
     setError('');
     setTargetOpen(true);
   };
+
+  // A student-scoped target already names its pupil; re-pointing it at a
+  // different pupil isn't a supported edit, so the picker only appears when
+  // creating a new one.
+  const editingStudentLabel =
+    editingTarget?.scope === 'STUDENT' && editingTarget.student
+      ? `${editingTarget.student.fullName} (${editingTarget.student.admissionNo})`
+      : null;
 
   const saveTarget = async () => {
     setSaving(true);
@@ -183,6 +216,8 @@ export default function TargetsPage() {
       description: targetForm.description || undefined,
       schoolId: targetForm.scope === 'SCHOOL' ? targetForm.schoolId : undefined,
       classId: targetForm.scope === 'CLASS' ? targetForm.classId : undefined,
+      studentId:
+        targetForm.scope === 'STUDENT' ? (editingTarget?.student?.id ?? targetForm.studentId) : undefined,
     };
     try {
       if (editingTarget) {
@@ -224,7 +259,9 @@ export default function TargetsPage() {
       ? 'Whole organisation'
       : t.scope === 'SCHOOL'
         ? (t.school?.code ?? 'School')
-        : (t.schoolClass?.name ?? 'Class');
+        : t.scope === 'CLASS'
+          ? (t.schoolClass?.name ?? 'Class')
+          : (t.student?.fullName ?? 'Pupil');
 
   return (
     <div>
@@ -417,7 +454,7 @@ export default function TargetsPage() {
         open={targetOpen}
         onClose={() => setTargetOpen(false)}
         title={editingTarget ? 'Edit target' : 'New target'}
-        description="Example: Term 1 — memorize 2 Juzu."
+        description="A class-wide goal (e.g. 2 Juzu), or a specific Surah/Ayah goal for one pupil."
         footer={
           <>
             <button className="btn-outline" onClick={() => setTargetOpen(false)} disabled={saving}>
@@ -453,6 +490,7 @@ export default function TargetsPage() {
                 <option value="ORGANIZATION">Whole organisation</option>
                 <option value="SCHOOL">One school</option>
                 <option value="CLASS">One class</option>
+                <option value="STUDENT">One pupil</option>
               </select>
             </div>
             <div>
@@ -480,7 +518,7 @@ export default function TargetsPage() {
             </div>
           </div>
 
-          {targetForm.scope !== 'ORGANIZATION' && (
+          {targetForm.scope !== 'ORGANIZATION' && editingStudentLabel === null && (
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="label">School</label>
@@ -496,7 +534,7 @@ export default function TargetsPage() {
                   ))}
                 </select>
               </div>
-              {targetForm.scope === 'CLASS' && (
+              {(targetForm.scope === 'CLASS' || targetForm.scope === 'STUDENT') && (
                 <div>
                   <label className="label">Class</label>
                   <select
@@ -513,6 +551,30 @@ export default function TargetsPage() {
                   </select>
                 </div>
               )}
+              {targetForm.scope === 'STUDENT' && (
+                <div className="sm:col-span-2">
+                  <label className="label">Pupil</label>
+                  <select
+                    className="input"
+                    value={targetForm.studentId}
+                    onChange={(e) => setTargetForm({ ...targetForm, studentId: e.target.value })}
+                  >
+                    {students.length === 0 && <option value="">No pupils in this class</option>}
+                    {students.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.fullName} ({s.admissionNo})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
+          {editingStudentLabel !== null && (
+            <div>
+              <label className="label">Pupil</label>
+              <input className="input" value={editingStudentLabel} disabled />
             </div>
           )}
 

@@ -12,6 +12,7 @@ type TargetInput = {
   description?: string;
   schoolId?: string;
   classId?: string;
+  studentId?: string;
 };
 
 @Injectable()
@@ -96,7 +97,37 @@ export class TargetsService {
         term: { select: { id: true, name: true, isActive: true } },
         school: { select: { id: true, code: true, name: true } },
         schoolClass: { select: { id: true, name: true, level: true } },
+        student: { select: { id: true, fullName: true, admissionNo: true } },
       },
+    });
+  }
+
+  /**
+   * Every target that currently applies to one pupil: the org-wide and
+   * school/class goals they inherit, plus any goal aimed at them by name
+   * (e.g. "memorize Surah Al-Mulk this term" for a pupil who needs extra
+   * focus). Only the active term is considered — past terms aren't "current".
+   */
+  async targetsForStudent(user: AuthUser, studentId: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+      include: { school: true },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+    if (student.school.organizationId !== user.organizationId) throw new ForbiddenException();
+
+    return this.prisma.target.findMany({
+      where: {
+        term: { organizationId: user.organizationId, isActive: true },
+        OR: [
+          { scope: 'ORGANIZATION' },
+          { scope: 'SCHOOL', schoolId: student.schoolId },
+          { scope: 'CLASS', classId: student.classId },
+          { scope: 'STUDENT', studentId: student.id },
+        ],
+      },
+      orderBy: [{ scope: 'desc' }, { createdAt: 'desc' }],
+      include: { term: { select: { id: true, name: true, isActive: true } } },
     });
   }
 
@@ -107,18 +138,36 @@ export class TargetsService {
     return target;
   }
 
+  /** A student-scoped target must name a pupil that belongs to the caller's organisation. */
+  private async assertStudentInOrg(user: AuthUser, studentId: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+      include: { school: true },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+    if (student.school.organizationId !== user.organizationId) throw new ForbiddenException();
+  }
+
   /** A target's scope decides which foreign key it hangs off; the others must be null. */
-  private scopeLinks(user: AuthUser, data: Pick<TargetInput, 'scope' | 'schoolId' | 'classId'>) {
+  private async scopeLinks(
+    user: AuthUser,
+    data: Pick<TargetInput, 'scope' | 'schoolId' | 'classId' | 'studentId'>,
+  ) {
     if (data.scope === 'SCHOOL' && !data.schoolId) {
       throw new ForbiddenException('A school-scoped target needs a school');
     }
     if (data.scope === 'CLASS' && !data.classId) {
       throw new ForbiddenException('A class-scoped target needs a class');
     }
+    if (data.scope === 'STUDENT') {
+      if (!data.studentId) throw new ForbiddenException('A student-scoped target needs a student');
+      await this.assertStudentInOrg(user, data.studentId);
+    }
     return {
       organizationId: data.scope === 'ORGANIZATION' ? user.organizationId : null,
       schoolId: data.scope === 'SCHOOL' ? data.schoolId : null,
       classId: data.scope === 'CLASS' ? data.classId : null,
+      studentId: data.scope === 'STUDENT' ? data.studentId : null,
     };
   }
 
@@ -131,7 +180,7 @@ export class TargetsService {
         unit: data.unit,
         amount: data.amount,
         description: data.description,
-        ...this.scopeLinks(user, data),
+        ...(await this.scopeLinks(user, data)),
       },
     });
   }
@@ -149,11 +198,12 @@ export class TargetsService {
         ...(data.amount !== undefined ? { amount: data.amount } : {}),
         ...(data.description !== undefined ? { description: data.description } : {}),
         scope,
-        ...this.scopeLinks(user, {
+        ...(await this.scopeLinks(user, {
           scope,
           schoolId: data.schoolId ?? existing.schoolId ?? undefined,
           classId: data.classId ?? existing.classId ?? undefined,
-        }),
+          studentId: data.studentId ?? existing.studentId ?? undefined,
+        })),
       },
     });
   }
