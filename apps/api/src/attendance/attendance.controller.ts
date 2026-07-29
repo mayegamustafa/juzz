@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { IsDateString, IsIn, IsString } from 'class-validator';
-import { AttendanceStatus, Role } from '@prisma/client';
+import { AttendanceStatus } from '@prisma/client';
 import { AttendanceService } from './attendance.service';
 import { Roles, CurrentUser, AuthUser } from '../common/decorators';
+import { RECORDING_ROLES, ADMIN_ROLES } from '../common/scope';
 
 class UpsertAttendanceDto {
   @IsString() studentId!: string;
@@ -24,9 +25,21 @@ export class AttendanceController {
     return this.attendance.listForStudent(user, id);
   }
 
-  @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR, Role.TEACHER)
+  @Roles(...RECORDING_ROLES)
   @Put()
   upsert(@CurrentUser() user: AuthUser, @Body() dto: UpsertAttendanceDto) {
     return this.attendance.upsert(user, dto);
+  }
+
+  @Roles(...RECORDING_ROLES)
+  @Delete(':id')
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.attendance.remove(user, id);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Post(':id/unlock')
+  unlock(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.attendance.unlock(user, id);
   }
 }

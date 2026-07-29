@@ -59,7 +59,7 @@ void main() {
             'level': 'P.1',
             'schoolCode': 'CPS',
             'schoolName': 'Central Primary',
-            'memorizedSurahIds': ['s1'],
+            'surahFractions': {'s1': 1.0},
             'memorized': 1,
             'percent': 2.1,
           }
@@ -69,7 +69,8 @@ void main() {
       expect(b.target, 48);
       expect(b.surahs.single.name, 'An-Nas');
       expect(b.classes.single.level, 'P.1');
-      expect(b.students.single.memorizedSurahIds, contains('s1'));
+      expect(b.students.single.surahFractions['s1'], 1.0);
+      expect(b.students.single.enrollmentStatus, EnrollmentStatus.approved);
       expect(b.students.single.percent, closeTo(2.1, 0.001));
     });
 
@@ -92,7 +93,7 @@ void main() {
         level: 'P.1',
         schoolCode: 'CPS',
         schoolName: 'Central',
-        memorizedSurahIds: {'s1'},
+        surahFractions: {'s1': 1.0},
         memorized: 1,
         percent: 2.0,
       );
@@ -100,7 +101,7 @@ void main() {
       expect(updated.memorized, 2);
       expect(updated.percent, 4.2);
       expect(updated.fullName, 'X');
-      expect(updated.memorizedSurahIds, {'s1'});
+      expect(updated.surahFractions, {'s1': 1.0});
     });
   });
 }

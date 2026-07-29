@@ -146,6 +146,11 @@ class ApiClient {
   Future<dynamic> put(String path, Object body, {String? idempotencyKey}) =>
       _send('PUT', path, body: body, idempotencyKey: idempotencyKey);
 
+  Future<dynamic> patch(String path, Object body, {String? idempotencyKey}) =>
+      _send('PATCH', path, body: body, idempotencyKey: idempotencyKey);
+
+  Future<dynamic> delete(String path) => _send('DELETE', path);
+
   /// Login uses a clean client — there is no session to attach or refresh yet.
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../data/update_service.dart';
 import '../state/providers.dart';
 import 'attendance_screen.dart';
 import 'dashboard_screen.dart';
@@ -22,6 +24,8 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Give the first frame a moment to settle before popping a dialog over it.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
   }
 
   @override
@@ -37,7 +41,55 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     if (state == AppLifecycleState.resumed) {
       ref.read(syncServiceProvider).drain();
       ref.read(notificationServiceProvider).check();
+      _checkForUpdate();
     }
+  }
+
+  Future<void> _checkForUpdate() async {
+    final release = await ref.read(updateServiceProvider).checkForUpdate();
+    if (release != null && mounted) _showUpdateDialog(release);
+  }
+
+  Future<void> _showUpdateDialog(AppRelease release) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: !release.mandatory,
+      builder: (ctx) => PopScope(
+        canPop: !release.mandatory,
+        child: AlertDialog(
+          icon: const Icon(Icons.system_update_rounded, color: Colors.teal, size: 32),
+          title: Text(release.mandatory ? 'Update required' : 'Update available'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Version ${release.versionName} is ready.'),
+              if (release.releaseNotes != null && release.releaseNotes!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(release.releaseNotes!, style: const TextStyle(fontSize: 13)),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                'Installing keeps your data and login — no need to uninstall first.',
+                style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+          actions: [
+            if (!release.mandatory)
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+            FilledButton(
+              onPressed: () async {
+                final uri = Uri.tryParse(release.downloadUrl);
+                if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                if (ctx.mounted && !release.mandatory) Navigator.pop(ctx);
+              },
+              child: const Text('Update now'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   static const _pages = [

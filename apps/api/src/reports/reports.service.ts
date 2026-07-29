@@ -20,7 +20,12 @@ export class ReportsService {
    */
   async general(user: AuthUser, opts: { level?: string; juz?: number[]; schoolId?: string }) {
     const juz = opts.juz?.length ? opts.juz : [29, 30];
-    const where: Prisma.StudentWhereInput = { ...this.scopeWhere(user), status: 'ACTIVE' };
+    // Pending/rejected registrations must not skew the organisation's official numbers.
+    const where: Prisma.StudentWhereInput = {
+      ...this.scopeWhere(user),
+      status: 'ACTIVE',
+      enrollmentStatus: 'APPROVED',
+    };
     if (opts.schoolId && isOrgWide(user)) where.schoolId = opts.schoolId;
     if (opts.level) where.schoolClass = { level: opts.level };
 
@@ -63,9 +68,10 @@ export class ReportsService {
   /** Role-aware dashboard KPIs. */
   async dashboard(user: AuthUser) {
     const where = this.scopeWhere(user);
+    const activeApproved: Prisma.StudentWhereInput = { ...where, status: 'ACTIVE', enrollmentStatus: 'APPROVED' };
     const [studentCount, memoCount, schoolCount, teacherCount] = await Promise.all([
-      this.prisma.student.count({ where: { ...where, status: 'ACTIVE' } }),
-      this.prisma.memorizationRecord.count({ where: { student: where } }),
+      this.prisma.student.count({ where: activeApproved }),
+      this.prisma.memorizationRecord.count({ where: { student: activeApproved } }),
       isOrgWide(user)
         ? this.prisma.school.count({ where: { organizationId: user.organizationId } })
         : Promise.resolve(1),
@@ -81,11 +87,15 @@ export class ReportsService {
     // progress per school (org-wide) for a bar chart
     let bySchool: { code: string; name: string; percent: number; students: number }[] = [];
     if (isOrgWide(user)) {
+      const activeApprovedStudent = { status: 'ACTIVE' as const, enrollmentStatus: 'APPROVED' as const };
       const schools = await this.prisma.school.findMany({
         where: { organizationId: user.organizationId },
         include: {
-          _count: { select: { students: true } },
-          students: { select: { _count: { select: { memorizations: true } } } },
+          _count: { select: { students: { where: activeApprovedStudent } } },
+          students: {
+            where: activeApprovedStudent,
+            select: { _count: { select: { memorizations: true } } },
+          },
         },
         orderBy: { code: 'asc' },
       });
@@ -207,7 +217,7 @@ export class ReportsService {
       return data.bySchool.sort((a, b) => b.percent - a.percent).slice(0, 20);
     }
     const students = await this.prisma.student.findMany({
-      where: { ...this.scopeWhere(user), status: 'ACTIVE' },
+      where: { ...this.scopeWhere(user), status: 'ACTIVE', enrollmentStatus: 'APPROVED' },
       include: {
         school: { select: { code: true } },
         schoolClass: { select: { level: true } },

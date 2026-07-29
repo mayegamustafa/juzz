@@ -48,16 +48,17 @@ class Repository {
 
   // ---------- writes (offline-safe) ----------
 
-  /// Mark/unmark a surah as memorized. The grid cell is a true upsert server-side.
+  /// Set a surah's memorization fraction (0, 0.25, 0.5, 0.75 or 1). The grid
+  /// cell is a true upsert server-side, so this also serves as "unmark".
   Future<void> setMemorization({
     required String studentId,
     required String surahId,
-    required bool memorized,
+    required double fraction,
   }) =>
       _sync.submit('PUT', '/quran/memorization', {
         'studentId': studentId,
         'surahId': surahId,
-        'fraction': memorized ? 1 : 0,
+        'fraction': fraction,
       });
 
   Future<void> addRevision({
@@ -109,6 +110,57 @@ class Repository {
         'status': status.wire,
       });
 
+  /// A Sheikh registers a pupil straight from their own classroom; the record
+  /// is PENDING until the secretariat verifies it. Queued like any other
+  /// write, so it captures fine even with no signal.
+  Future<void> registerStudent({
+    required String classId,
+    String? streamId,
+    required String admissionNo,
+    required String fullName,
+    String? gender,
+    String? guardianName,
+    String? guardianPhone,
+  }) =>
+      _sync.submit('POST', '/students', {
+        'classId': classId,
+        'streamId': ?streamId,
+        'admissionNo': admissionNo,
+        'fullName': fullName,
+        'gender': ?gender,
+        'guardianName': ?guardianName,
+        'guardianPhone': ?guardianPhone,
+      });
+
+  // ---------- edit / delete (corrections; online, within the 24h window) ----------
+  //
+  // Unlike the writes above, these are not queued offline: they are
+  // corrections to something already recorded, almost always made in the same
+  // session, and the 24h-lock rule the server enforces needs a live response
+  // (locked / not-locked / unlocked-by-admin) rather than a silent retry later.
+
+  Future<void> updateRevision(String id, {int? performanceScore, String? note}) =>
+      _api.patch('/quran/revision/$id', {'performanceScore': ?performanceScore, 'note': ?note});
+  Future<void> removeRevision(String id) => _api.delete('/quran/revision/$id');
+  Future<void> unlockRevision(String id) => _api.post('/quran/revision/$id/unlock', const {});
+
+  Future<void> updateAssessment(String id, {String? grade, int? score}) =>
+      _api.patch('/quran/assessment/$id', {'grade': ?grade, 'score': ?score});
+  Future<void> removeAssessment(String id) => _api.delete('/quran/assessment/$id');
+  Future<void> unlockAssessment(String id) => _api.post('/quran/assessment/$id/unlock', const {});
+
+  Future<void> updateMistake(String id, {String? type, int? count}) =>
+      _api.patch('/quran/mistakes/$id', {'type': ?type, 'count': ?count});
+  Future<void> removeMistake(String id) => _api.delete('/quran/mistakes/$id');
+  Future<void> unlockMistake(String id) => _api.post('/quran/mistakes/$id/unlock', const {});
+
+  Future<void> updateRemark(String id, String body) => _api.patch('/remarks/$id', {'body': body});
+  Future<void> removeRemark(String id) => _api.delete('/remarks/$id');
+  Future<void> unlockRemark(String id) => _api.post('/remarks/$id/unlock', const {});
+
+  Future<void> removeAttendance(String id) => _api.delete('/attendance/$id');
+  Future<void> unlockAttendance(String id) => _api.post('/attendance/$id/unlock', const {});
+
   // ---------- reads (network, cached where useful) ----------
 
   Future<List<AttendanceRow>> attendanceSheet(String classId, DateTime date) async {
@@ -133,6 +185,8 @@ class Repository {
                 studentId: e['id'] as String,
                 fullName: e['fullName'] as String,
                 status: AttendanceStatus.tryParse(e['status'] as String?),
+                recordId: e['recordId'] as String?,
+                canEdit: e['canEdit'] as bool? ?? true,
               ))
           .toList();
 
@@ -148,6 +202,7 @@ class Repository {
           label: label,
           detail: score == null ? null : '$score/100',
           date: DateTime.tryParse('${j['revisedAt']}') ?? DateTime.now(),
+          canEdit: j['canEdit'] as bool? ?? false,
         );
       });
 
@@ -159,6 +214,7 @@ class Repository {
           label: '${j['grade'] ?? '—'}'.replaceAll('_', ' '),
           detail: score == null ? null : '$score/100',
           date: DateTime.tryParse('${j['assessedAt']}') ?? DateTime.now(),
+          canEdit: j['canEdit'] as bool? ?? false,
         );
       });
 
@@ -173,6 +229,7 @@ class Repository {
             if (s != null) '${s['number']}. ${s['nameTransliteration']}',
           ].join(' · '),
           date: DateTime.tryParse('${j['occurredAt']}') ?? DateTime.now(),
+          canEdit: j['canEdit'] as bool? ?? false,
         );
       });
 
@@ -184,6 +241,7 @@ class Repository {
           label: j['body'] as String? ?? '',
           detail: author?['fullName'] as String?,
           date: DateTime.tryParse('${j['createdAt']}') ?? DateTime.now(),
+          canEdit: j['canEdit'] as bool? ?? false,
         );
       });
 
@@ -195,6 +253,7 @@ class Repository {
           label: '${j['status']}',
           detail: DateFormat('EEE, d MMM yyyy').format(d),
           date: d,
+          canEdit: j['canEdit'] as bool? ?? false,
         );
       });
 

@@ -33,7 +33,12 @@ export class AnalyticsService {
    * pupil fetch rather than N queries per school/sheikh/class.
    */
   async overview(user: AuthUser, opts: { schoolId?: string; level?: string } = {}) {
-    const where: Prisma.StudentWhereInput = { ...(await this.scope(user)), status: 'ACTIVE' };
+    // Pending/rejected registrations must not skew the organisation's official numbers.
+    const where: Prisma.StudentWhereInput = {
+      ...(await this.scope(user)),
+      status: 'ACTIVE',
+      enrollmentStatus: 'APPROVED',
+    };
     if (opts.schoolId && isOrgWide(user)) where.schoolId = opts.schoolId;
     if (opts.level) where.schoolClass = { level: opts.level };
 

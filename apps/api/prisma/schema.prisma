@@ -40,6 +40,15 @@ enum StudentStatus {
   TRANSFERRED
 }
 
+/// A Sheikh may register a pupil, but the enrolment only becomes official once
+/// the secretariat (Super Admin / Manager) verifies it. Records created by the
+/// secretariat are auto-approved.
+enum EnrollmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum AssessmentGrade {
   EXCELLENT
   VERY_GOOD
@@ -216,6 +225,15 @@ model Student {
   guardianPhone   String?
   enrollmentDate  DateTime?
   status          StudentStatus @default(ACTIVE)
+
+  // A Sheikh-submitted registration starts PENDING; the secretariat approves or
+  // rejects it. Records created by the secretariat itself are auto-APPROVED.
+  enrollmentStatus EnrollmentStatus @default(APPROVED)
+  enrolledById     String? // who submitted the registration
+  approvedById     String? // who verified / rejected it
+  approvedAt       DateTime?
+  rejectionReason  String?
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -237,6 +255,7 @@ model Student {
   @@index([classId])
   @@index([streamId])
   @@index([primaryTeacherId])
+  @@index([enrollmentStatus])
 }
 
 model Assignment {
@@ -308,6 +327,11 @@ model RevisionRecord {
   note             String?
   createdAt        DateTime @default(now())
 
+  // A Sheikh may edit/delete their own entry for 24h; after that only the
+  // secretariat can, unless they extend this window for the Sheikh.
+  unlockedUntil DateTime?
+  unlockedById  String?
+
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   surah   Surah?  @relation(fields: [surahId], references: [id])
 
@@ -323,6 +347,9 @@ model AssessmentRecord {
   recordedById String?
   note         String?
   createdAt    DateTime         @default(now())
+
+  unlockedUntil DateTime?
+  unlockedById  String?
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -340,6 +367,9 @@ model MistakeRecord {
   note         String?
   createdAt    DateTime    @default(now())
 
+  unlockedUntil DateTime?
+  unlockedById  String?
+
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   surah   Surah?  @relation(fields: [surahId], references: [id])
 
@@ -355,6 +385,9 @@ model AttendanceRecord {
   note         String?
   createdAt    DateTime         @default(now())
 
+  unlockedUntil DateTime?
+  unlockedById  String?
+
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, date])
@@ -367,6 +400,9 @@ model Remark {
   authorId  String?
   body      String
   createdAt DateTime @default(now())
+
+  unlockedUntil DateTime?
+  unlockedById  String?
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   author  User?   @relation(fields: [authorId], references: [id])
@@ -460,4 +496,21 @@ model IdempotencyRecord {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+/// Single-row table describing the latest Flutter teacher app build. The admin
+/// panel edits it after every Codemagic build; the app polls it on launch to
+/// decide whether to prompt for (or force) an update. Android installs a new
+/// APK signed with the same key over the old one in place — no uninstall, no
+/// data loss — so this is a real update path even outside the Play Store.
+model AppRelease {
+  id           String   @id @default("mobile") // fixed id: there is only ever one row
+  platform     String   @default("android")
+  versionCode  Int // Android versionCode; compared as an integer
+  versionName  String // human-readable, e.g. "1.2.0"
+  downloadUrl  String // direct APK link (Codemagic artifact or GitHub release)
+  releaseNotes String?
+  mandatory    Boolean  @default(false)
+  publishedById String?
+  updatedAt    DateTime @updatedAt
 }

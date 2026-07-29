@@ -5,13 +5,16 @@ import PDFDocument from 'pdfkit';
 import {
   APP_NAME,
   ORG_NAME,
+  LETTERHEAD_TITLE,
+  LETTERHEAD_MOTTO,
+  LETTERHEAD_DEPARTMENT,
+  letterheadSchoolLine,
   EMERALD,
   EMERALD_DARK,
   GOLD,
   GREY,
   ZEBRA,
   INK,
-  logos,
   logosSmall,
   fmtDate,
   fmtDateTime,
@@ -28,42 +31,71 @@ type GeneralData = {
 type StudentReport = Awaited<ReturnType<import('./reports.service').ReportsService['student']>>;
 
 const MARGIN = 40;
-const HEADER_H = 76;
+const HEADER_H = 108;
 const FOOTER_H = 34;
 
 @Injectable()
 export class ExportService {
   // ==================== Excel ====================
 
-  /** Branded title block above every sheet's data. */
-  private xlsxHeader(wb: Workbook, ws: Worksheet, title: string, subtitle?: string) {
-    const { sak, cps } = logos();
-    if (sak) {
-      const id = wb.addImage({ buffer: sak as any, extension: 'png' });
-      ws.addImage(id, { tl: { col: 0.1, row: 0.1 }, ext: { width: 42, height: 42 } });
+  /** Embeds each crest once per workbook; every sheet's `xlsxHeader` reuses the same id. */
+  private embedLogos(wb: Workbook): { sakId: number | null; cpsId: number | null } {
+    const { sak, cps } = logosSmall();
+    return {
+      sakId: sak ? wb.addImage({ buffer: sak as any, extension: 'png' }) : null,
+      cpsId: cps ? wb.addImage({ buffer: cps as any, extension: 'png' }) : null,
+    };
+  }
+
+  /**
+   * The official letterhead (org name, motto, department, school) followed by
+   * this specific report's title. Every exported sheet starts with it.
+   */
+  private xlsxHeader(
+    ws: Worksheet,
+    logoIds: { sakId: number | null; cpsId: number | null },
+    title: string,
+    subtitle?: string,
+    schoolName?: string | null,
+  ) {
+    if (logoIds.sakId !== null) {
+      ws.addImage(logoIds.sakId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 46, height: 46 } });
     }
-    if (cps) {
-      const id = wb.addImage({ buffer: cps as any, extension: 'png' });
-      ws.addImage(id, { tl: { col: 0.85, row: 0.1 }, ext: { width: 42, height: 42 } });
+    if (logoIds.cpsId !== null) {
+      ws.addImage(logoIds.cpsId, { tl: { col: 0.85, row: 0.1 }, ext: { width: 46, height: 46 } });
     }
 
-    ws.getRow(1).height = 20;
+    ws.getRow(1).height = 22;
     ws.getRow(2).height = 16;
+    ws.getRow(3).height = 15;
+    ws.getRow(4).height = 15;
 
-    const t = ws.getCell('C1');
-    t.value = title;
-    t.font = { bold: true, size: 14, color: { argb: 'FF047857' } };
+    ws.getCell('C1').value = LETTERHEAD_TITLE;
+    ws.getCell('C1').font = { bold: true, size: 15, color: { argb: 'FF065F46' } };
 
-    const s = ws.getCell('C2');
-    s.value = subtitle ?? ORG_NAME;
-    s.font = { size: 9, color: { argb: 'FF6B7280' } };
+    ws.getCell('C2').value = LETTERHEAD_MOTTO;
+    ws.getCell('C2').font = { italic: true, size: 10, color: { argb: 'FF6B7280' } };
 
-    const g = ws.getCell('C3');
-    g.value = `${APP_NAME} · generated ${fmtDateTime(new Date())}`;
-    g.font = { size: 8, italic: true, color: { argb: 'FF9CA3AF' } };
+    ws.getCell('C3').value = LETTERHEAD_DEPARTMENT;
+    ws.getCell('C3').font = { bold: true, size: 9, color: { argb: 'FFB8860B' } };
+
+    ws.getCell('C4').value = letterheadSchoolLine(schoolName);
+    ws.getCell('C4').font = { bold: true, size: 9, color: { argb: 'FF111111' } };
 
     ws.addRow([]);
-    ws.addRow([]);
+
+    const t = ws.addRow([]);
+    t.getCell(1).value = title;
+    t.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF047857' } };
+
+    const s = ws.addRow([]);
+    s.getCell(1).value = subtitle ?? '';
+    s.getCell(1).font = { size: 9, color: { argb: 'FF6B7280' } };
+
+    const g = ws.addRow([]);
+    g.getCell(1).value = `${APP_NAME} · generated ${fmtDateTime(new Date())}`;
+    g.getCell(1).font = { size: 8, italic: true, color: { argb: 'FF9CA3AF' } };
+
     ws.addRow([]);
     ws.addRow([]);
   }
@@ -89,7 +121,9 @@ export class ExportService {
       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
     });
 
-    this.xlsxHeader(wb, ws, `GENERAL roll-up — ${level}`, 'Pupils who have memorized each surah, per school');
+    const schoolName = data.schools.length === 1 ? data.schools[0].name : undefined;
+    const logoIds = this.embedLogos(wb);
+    this.xlsxHeader(ws, logoIds, `GENERAL roll-up — ${level}`, 'Pupils who have memorized each surah, per school', schoolName);
 
     const header = ['Surah', ...data.schools.map((s) => s.code), 'TOTAL'];
     const headerRow = ws.addRow(header);
@@ -123,9 +157,17 @@ export class ExportService {
     wb.creator = APP_NAME;
     wb.created = new Date();
 
+    const logoIds = this.embedLogos(wb);
+
     // --- Summary ---
     const info = wb.addWorksheet('Summary');
-    this.xlsxHeader(wb, info, `Pupil Report — ${rep.student.fullName}`, `${rep.student.school} · ${rep.student.level}`);
+    this.xlsxHeader(
+      info,
+      logoIds,
+      `Pupil Report — ${rep.student.fullName}`,
+      `${rep.student.school} · ${rep.student.level}`,
+      rep.student.school,
+    );
 
     const pairs: [string, string | number][] = [
       ['Admission No', rep.student.admissionNo],
@@ -151,7 +193,7 @@ export class ExportService {
 
     const sheet = (name: string, headers: string[], rows: (string | number)[][], widths: number[]) => {
       const ws = wb.addWorksheet(name);
-      this.xlsxHeader(wb, ws, `${name} — ${rep.student.fullName}`);
+      this.xlsxHeader(ws, logoIds, `${name} — ${rep.student.fullName}`, undefined, rep.student.school);
       const hr = ws.addRow(headers);
       this.styleHeaderRow(ws, hr.number, headers.length);
       rows.forEach((r) => ws.addRow(r));
@@ -195,7 +237,7 @@ export class ExportService {
    */
   private renderPdf(
     build: (doc: PDFKit.PDFDocument) => void,
-    opts: { landscape?: boolean } = {},
+    opts: { landscape?: boolean; schoolName?: string | null } = {},
   ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
@@ -222,8 +264,8 @@ export class ExportService {
       };
 
       // Every page gets the brand band, including ones pdfkit adds implicitly.
-      doc.on('pageAdded', () => this.pdfHeader(doc, marks));
-      this.pdfHeader(doc, marks);
+      doc.on('pageAdded', () => this.pdfHeader(doc, marks, opts.schoolName));
+      this.pdfHeader(doc, marks, opts.schoolName);
 
       build(doc);
       this.pdfFooters(doc);
@@ -231,35 +273,56 @@ export class ExportService {
     });
   }
 
-  private pdfHeader(doc: PDFKit.PDFDocument, marks: PdfMarks) {
+  /**
+   * The organisation's letterhead: title, motto, department and the specific
+   * school this document is about (or "All Schools" for an org-wide report).
+   */
+  private pdfHeader(doc: PDFKit.PDFDocument, marks: PdfMarks, schoolName?: string | null) {
     const { sak, cps } = marks;
     const w = doc.page.width;
+    const textLeft = MARGIN + 66;
+    const textWidth = w - 2 * MARGIN - 132;
 
     doc.save();
     doc.rect(0, 0, w, HEADER_H).fill(EMERALD);
     doc.rect(0, HEADER_H - 3, w, 3).fill(GOLD);
 
     // Crests sit on white chips: both are crimson and vanish against emerald.
-    const y = 14;
+    const chipY = (HEADER_H - 58) / 2;
     if (sak) {
-      doc.roundedRect(MARGIN, y, 48, 48, 6).fill('#FFFFFF');
-      doc.image(sak as any, MARGIN + 4, y + 4, { fit: [40, 40] });
+      doc.roundedRect(MARGIN, chipY, 58, 58, 7).fill('#FFFFFF');
+      doc.image(sak as any, MARGIN + 5, chipY + 5, { fit: [48, 48] });
     }
     if (cps) {
-      doc.roundedRect(w - MARGIN - 48, y, 48, 48, 6).fill('#FFFFFF');
-      doc.image(cps as any, w - MARGIN - 44, y + 4, { fit: [40, 40] });
+      doc.roundedRect(w - MARGIN - 58, chipY, 58, 58, 7).fill('#FFFFFF');
+      doc.image(cps as any, w - MARGIN - 53, chipY + 5, { fit: [48, 48] });
     }
 
     doc
       .fillColor('#FFFFFF')
       .font('Helvetica-Bold')
-      .fontSize(15)
-      .text(APP_NAME, MARGIN + 60, 22, { width: w - 2 * MARGIN - 120, align: 'center' });
+      .fontSize(13)
+      .text(LETTERHEAD_TITLE, textLeft, 14, { width: textWidth, align: 'center' });
     doc
-      .font('Helvetica')
+      .font('Helvetica-Oblique')
       .fontSize(8.5)
       .fillColor('#D1FAE5')
-      .text(ORG_NAME, MARGIN + 60, 42, { width: w - 2 * MARGIN - 120, align: 'center' });
+      .text(LETTERHEAD_MOTTO, textLeft, 32, { width: textWidth, align: 'center' });
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .fillColor('#FDE9B8')
+      .text(LETTERHEAD_DEPARTMENT, textLeft, 47, { width: textWidth, align: 'center', characterSpacing: 0.5 });
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(9.5)
+      .fillColor('#FFFFFF')
+      .text(letterheadSchoolLine(schoolName), textLeft, 62, { width: textWidth, align: 'center' });
+    doc
+      .font('Helvetica')
+      .fontSize(7)
+      .fillColor('#D1FAE5')
+      .text(APP_NAME, textLeft, 82, { width: textWidth, align: 'center' });
 
     doc.restore();
     doc.fillColor(INK);
@@ -364,6 +427,7 @@ export class ExportService {
   async generalPdf(data: GeneralData, level: string): Promise<Buffer> {
     // Many school columns — landscape keeps them legible.
     const landscape = data.schools.length > 6;
+    const schoolName = data.schools.length === 1 ? data.schools[0].name : undefined;
 
     return this.renderPdf(
       (doc) => {
@@ -398,12 +462,13 @@ export class ExportService {
         doc.font('Helvetica').fontSize(8.5).fillColor(GREY);
         doc.text(data.schools.map((s) => `${s.code}: ${s.enrolled}`).join('    '), { width: usable });
       },
-      { landscape },
+      { landscape, schoolName },
     );
   }
 
   async studentPdf(rep: StudentReport): Promise<Buffer> {
-    return this.renderPdf((doc) => {
+    return this.renderPdf(
+      (doc) => {
       const usable = doc.page.width - 2 * MARGIN;
       const s = rep.summary;
 
@@ -486,6 +551,8 @@ export class ExportService {
       doc.font('Helvetica').fontSize(8).fillColor(GREY);
       doc.text("Sheikh's signature", MARGIN, y + 30, { width: colW });
       doc.text('Manager / EMT', MARGIN + colW + 40, y + 30, { width: colW });
-    });
+      },
+      { schoolName: rep.student.school },
+    );
   }
 }

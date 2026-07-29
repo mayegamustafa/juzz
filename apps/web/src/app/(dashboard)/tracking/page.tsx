@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth, canEdit } from '@/lib/auth';
 import { PageHeader, Spinner, Empty } from '@/components/ui';
 import { Check, Lock } from '@/components/icons';
+import { FractionPicker } from '@/components/FractionPicker';
 
 interface School { id: string; code: string; name: string }
 interface SchoolClass { id: string; level: string; name: string }
@@ -29,6 +30,7 @@ export default function TrackingPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
+  const [picker, setPicker] = useState<{ row: Row; surah: Surah; x: number; y: number } | null>(null);
 
   // load schools
   useEffect(() => {
@@ -64,22 +66,26 @@ export default function TrackingPage() {
     loadGrid();
   }, [loadGrid]);
 
-  const toggle = async (row: Row, surah: Surah) => {
+  const setFraction = async (row: Row, surah: Surah, next: number) => {
     if (!editable) return;
-    const current = row.cells[surah.id] ?? 0;
-    const next = current >= 1 ? 0 : 1;
     const key = `${row.id}:${surah.id}`;
     setSaving(key);
 
-    // optimistic update
+    // optimistic update — a fractional memorization percent counts proportionally
+    // toward the pupil's overall progress, matching how the server totals it.
     setRows((prev) =>
       prev.map((r) => {
         if (r.id !== row.id) return r;
         const cells = { ...r.cells };
-        if (next === 0) delete cells[surah.id];
+        if (next <= 0) delete cells[surah.id];
         else cells[surah.id] = next;
+        const memorizedFraction = Object.values(cells).reduce((a, b) => a + b, 0);
         const memorized = Object.keys(cells).length;
-        return { ...r, cells, progress: { ...r.progress, memorized, percent: Math.round((memorized / r.progress.target) * 1000) / 10 } };
+        return {
+          ...r,
+          cells,
+          progress: { ...r.progress, memorized, percent: Math.round((memorizedFraction / r.progress.target) * 1000) / 10 },
+        };
       }),
     );
 
@@ -90,6 +96,11 @@ export default function TrackingPage() {
     } finally {
       setSaving(null);
     }
+  };
+
+  const openPicker = (e: React.MouseEvent, row: Row, surah: Surah) => {
+    if (!editable) return;
+    setPicker({ row, surah, x: e.clientX, y: e.clientY });
   };
 
   return (
@@ -122,13 +133,22 @@ export default function TrackingPage() {
             ))}
           </select>
         </div>
-        <div className="ml-auto flex items-center gap-1.5 text-xs" style={{ color: 'var(--muted)' }}>
+        <div className="ml-auto flex items-center gap-3 text-xs" style={{ color: 'var(--muted)' }}>
           {editable ? (
             <>
-              <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded bg-emerald-500 text-white">
-                <Check size={10} />
+              <span className="flex items-center gap-1">
+                <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded bg-emerald-500 text-white">
+                  <Check size={10} />
+                </span>
+                memorized
               </span>
-              tap to toggle
+              <span className="flex items-center gap-1">
+                <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded bg-orange-500 text-[7px] font-bold text-white">
+                  ½
+                </span>
+                in progress
+              </span>
+              <span>tap for options</span>
             </>
           ) : (
             <>
@@ -192,17 +212,21 @@ export default function TrackingPage() {
                   {surahs.map((s) => {
                     const v = r.cells[s.id] ?? 0;
                     const key = `${r.id}:${s.id}`;
+                    const title = `${s.number}. ${s.nameTransliteration}${
+                      v > 0 ? ` — ${Math.round(v * 100)}%` : ''
+                    }`;
                     return (
                       <td
                         key={s.id}
-                        onClick={() => toggle(r, s)}
+                        onClick={(e) => openPicker(e, r, s)}
+                        title={title}
                         className={`border-b border-r text-center align-middle ${
                           editable ? 'cursor-pointer' : ''
                         } ${
                           v >= 1
                             ? 'bg-emerald-500 text-white'
                             : v > 0
-                              ? 'bg-gold-300'
+                              ? 'bg-orange-500 text-white'
                               : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
                         } ${saving === key ? 'opacity-50' : ''}`}
                         style={{ borderColor: 'var(--border)', height: 30 }}
@@ -211,7 +235,7 @@ export default function TrackingPage() {
                           {v >= 1 ? (
                             <Check size={14} />
                           ) : v > 0 ? (
-                            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-gold-600" />
+                            <span className="text-[9px] font-bold leading-none">{Math.round(v * 100)}</span>
                           ) : null}
                         </span>
                       </td>
@@ -222,6 +246,16 @@ export default function TrackingPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {picker && (
+        <FractionPicker
+          x={picker.x}
+          y={picker.y}
+          current={picker.row.cells[picker.surah.id] ?? 0}
+          onPick={(value) => setFraction(picker.row, picker.surah, value)}
+          onClose={() => setPicker(null)}
+        />
       )}
     </div>
   );

@@ -5,47 +5,15 @@ import '../core/theme.dart';
 import '../data/api_client.dart';
 import '../state/providers.dart';
 
-/// Brand mark: an open book with a crescent — matches the web panel's logo.
+/// The SAK crest, painted white — used on the emerald splash and the login
+/// card's dark square. See splash_screen.dart for the animated app-launch mark.
 class LogoMark extends StatelessWidget {
   final double size;
-  final Color? color;
-  const LogoMark({super.key, this.size = 48, this.color});
+  const LogoMark({super.key, this.size = 48});
 
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.menu_book_rounded, size: size, color: color ?? Colors.white);
-  }
-}
-
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Brand.emerald,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            LogoMark(size: 64),
-            SizedBox(height: 20),
-            Text('QPMS',
-                style: TextStyle(
-                    color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-            SizedBox(height: 6),
-            Text('Quran Progress Tracking',
-                style: TextStyle(color: Colors.white70, fontSize: 13)),
-            SizedBox(height: 36),
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white70),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Image.asset('assets/icon/icon_mark_white.png', width: size, height: size);
   }
 }
 

@@ -53,16 +53,24 @@ const EMPTY = {
 export function StudentForm({
   student,
   canReassign,
+  ownSchoolId,
   onClose,
   onSaved,
 }: {
   student: Student | null;
   /** Only the secretariat may set the school, class and sheikh. */
   canReassign: boolean;
+  /**
+   * A Sheikh registering a brand-new pupil still needs to pick a class (it's
+   * required), just scoped to their own school — this is that school's id.
+   */
+  ownSchoolId?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const toast = useToast();
+  const selfRegistering = !canReassign && !student;
+
   const [form, setForm] = useState(() =>
     student
       ? {
@@ -76,7 +84,7 @@ export function StudentForm({
           guardianPhone: student.guardianPhone ?? '',
           primaryTeacherId: student.primaryTeacherId ?? '',
         }
-      : EMPTY,
+      : { ...EMPTY, schoolId: ownSchoolId ?? '' },
   );
 
   const [schools, setSchools] = useState<School[]>([]);
@@ -95,6 +103,7 @@ export function StudentForm({
   }, [canReassign]);
 
   // Classes depend on the chosen school; changing school invalidates class + stream.
+  // A self-registering Sheikh never changes school, but still needs its class list.
   useEffect(() => {
     if (!form.schoolId) {
       setClasses([]);
@@ -126,6 +135,11 @@ export function StudentForm({
       payload.classId = form.classId;
       payload.streamId = form.streamId || null;
       payload.primaryTeacherId = form.primaryTeacherId || null;
+    } else if (selfRegistering) {
+      // A Sheikh still has to say which class; the school and sheikh (themselves)
+      // are implied server-side.
+      payload.classId = form.classId;
+      payload.streamId = form.streamId || null;
     }
 
     try {
@@ -134,7 +148,11 @@ export function StudentForm({
         toast.success(`${form.fullName} updated`);
       } else {
         await api.post('/students', { ...payload, schoolId: form.schoolId, classId: form.classId });
-        toast.success(`${form.fullName} added`);
+        toast.success(
+          selfRegistering
+            ? `${form.fullName} submitted for verification`
+            : `${form.fullName} added`,
+        );
       }
       onSaved();
     } catch (e: any) {
@@ -144,15 +162,20 @@ export function StudentForm({
     }
   };
 
-  const valid = form.fullName.trim() && form.admissionNo.trim() && (!canReassign || (form.schoolId && form.classId));
+  const needsClassPicked = canReassign || selfRegistering;
+  const valid = form.fullName.trim() && form.admissionNo.trim() && (!needsClassPicked || (form.schoolId && form.classId));
 
   return (
     <Modal
       open
       onClose={onClose}
-      title={student ? `Edit ${student.fullName}` : 'Add pupil'}
+      title={student ? `Edit ${student.fullName}` : selfRegistering ? 'Register pupil' : 'Add pupil'}
       description={
-        canReassign ? undefined : 'You may correct details. Only the secretariat can move a pupil.'
+        selfRegistering
+          ? 'This goes to the secretariat for verification before it joins the official roster. You can keep recording progress for this pupil while it waits.'
+          : canReassign
+            ? undefined
+            : 'You may correct details. Only the secretariat can move a pupil.'
       }
       footer={
         <>
@@ -160,7 +183,7 @@ export function StudentForm({
             Cancel
           </button>
           <button className="btn-primary" onClick={save} disabled={saving || !valid}>
-            {saving ? 'Saving…' : student ? 'Save changes' : 'Add pupil'}
+            {saving ? 'Saving…' : student ? 'Save changes' : selfRegistering ? 'Submit for verification' : 'Add pupil'}
           </button>
         </>
       }
@@ -241,6 +264,37 @@ export function StudentForm({
               </div>
             </div>
           </>
+        )}
+
+        {selfRegistering && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label">Class</label>
+              <select
+                className="input"
+                value={form.classId}
+                onChange={(e) => setForm({ ...form, classId: e.target.value, streamId: '' })}
+              >
+                {classes.length === 0 && <option value="">Loading…</option>}
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Stream</label>
+              <select className="input" value={form.streamId} onChange={(e) => setForm({ ...form, streamId: e.target.value })}>
+                <option value="">None</option>
+                {streams.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         )}
 
         <div className="grid gap-3 sm:grid-cols-3">

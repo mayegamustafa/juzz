@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { useAuth, canEdit } from '@/lib/auth';
+import { useAuth, canEdit, isAdmin } from '@/lib/auth';
 import { PageHeader, Spinner, ProgressBar } from '@/components/ui';
-import { StudentRecords } from '@/components/StudentRecords';
+import { StudentRecords, RecordActions } from '@/components/StudentRecords';
+import { ConfirmDialog } from '@/components/Modal';
+import { useToast } from '@/components/Toast';
 import { ChevronLeft, Download } from '@/components/icons';
 
 interface StudentDetail {
@@ -31,17 +33,23 @@ interface Remark {
   body: string;
   createdAt: string;
   author: { fullName: string } | null;
+  canEdit: boolean;
 }
 
 export default function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const editable = canEdit(user?.role);
+  const canManage = isAdmin(user?.role);
+  const toast = useToast();
   const [s, setS] = useState<StudentDetail | null>(null);
   const [remarks, setRemarks] = useState<Remark[]>([]);
   const [newRemark, setNewRemark] = useState('');
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState('');
+  const [editingRemark, setEditingRemark] = useState<Remark | null>(null);
+  const [editRemarkBody, setEditRemarkBody] = useState('');
+  const [deletingRemark, setDeletingRemark] = useState<Remark | null>(null);
 
   const exportAs = async (format: 'pdf' | 'xlsx') => {
     setExporting(format);
@@ -68,6 +76,36 @@ export default function StudentDetailPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const saveRemarkEdit = async () => {
+    if (!editingRemark || !editRemarkBody.trim()) return;
+    try {
+      await api.patch(`/remarks/${editingRemark.id}`, { body: editRemarkBody.trim() });
+      setEditingRemark(null);
+      api.get<Remark[]>(`/students/${id}/remarks`).then(setRemarks);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const doDeleteRemark = async () => {
+    if (!deletingRemark) return;
+    try {
+      await api.del(`/remarks/${deletingRemark.id}`);
+      toast.success('Remark deleted');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setDeletingRemark(null);
+      api.get<Remark[]>(`/students/${id}/remarks`).then(setRemarks);
+    }
+  };
+
+  const unlockRemark = async (remarkId: string) => {
+    await api.post(`/remarks/${remarkId}/unlock`, {});
+    toast.success('Unlocked for the Sheikh for 24 hours');
+    api.get<Remark[]>(`/students/${id}/remarks`).then(setRemarks);
   };
 
   if (!s) return <Spinner />;
@@ -160,14 +198,53 @@ export default function StudentDetailPage() {
           )}
           {remarks.map((r) => (
             <div key={r.id} className="rounded-lg border p-3 text-sm" style={{ borderColor: 'var(--border)' }}>
-              <p>{r.body}</p>
-              <p className="mt-1 text-[11px]" style={{ color: 'var(--muted)' }}>
-                {r.author?.fullName ?? 'Unknown'} · {new Date(r.createdAt).toLocaleDateString()}
-              </p>
+              {editingRemark?.id === r.id ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className="input flex-1"
+                    value={editRemarkBody}
+                    onChange={(e) => setEditRemarkBody(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && saveRemarkEdit()}
+                  />
+                  <button className="btn-primary h-8 px-3 text-xs" onClick={saveRemarkEdit}>
+                    Save
+                  </button>
+                  <button className="btn-outline h-8 px-3 text-xs" onClick={() => setEditingRemark(null)}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p>{r.body}</p>
+                    <p className="mt-1 text-[11px]" style={{ color: 'var(--muted)' }}>
+                      {r.author?.fullName ?? 'Unknown'} · {new Date(r.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <RecordActions
+                    canEdit={r.canEdit}
+                    canManage={canManage}
+                    onEdit={() => {
+                      setEditingRemark(r);
+                      setEditRemarkBody(r.body);
+                    }}
+                    onDelete={() => setDeletingRemark(r)}
+                    onUnlock={() => unlockRemark(r.id)}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deletingRemark}
+        onClose={() => setDeletingRemark(null)}
+        onConfirm={doDeleteRemark}
+        title="Delete this remark?"
+        message="This cannot be undone."
+      />
     </div>
   );
 }

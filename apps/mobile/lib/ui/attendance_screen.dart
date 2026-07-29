@@ -135,7 +135,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(r.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            Row(
+              children: [
+                Text(r.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                if (!r.canEdit) ...[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'Locked after 24h — ask the manager to unlock it',
+                    child: Icon(Icons.lock_outline_rounded, size: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ],
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -144,7 +155,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                     child: _StatusButton(
                       status: s,
                       selected: r.status == s,
-                      onTap: () => _mark(r, s, date),
+                      onTap: r.canEdit ? () => _mark(r, s, date) : null,
                     ),
                   ),
                   if (s != AttendanceStatus.values.last) const SizedBox(width: 6),
@@ -258,7 +269,7 @@ class _Summary extends StatelessWidget {
 class _StatusButton extends StatelessWidget {
   final AttendanceStatus status;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _StatusButton({required this.status, required this.selected, required this.onTap});
 

@@ -23,6 +23,13 @@ body {
   color: var(--text);
 }
 
+/* Institutional feel for the page title and letterhead-style brand marks only —
+   small card headings (h2) stay on the sans body font so the UI doesn't turn
+   into a wall of serif type. */
+h1, .font-heading {
+  font-family: Georgia, Cambria, 'Times New Roman', ui-serif, serif;
+}
+
 @layer components {
   .card {
     @apply rounded-xl border shadow-sm;

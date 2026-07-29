@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Gender, Prisma, StudentStatus } from '@prisma/client';
+import { EnrollmentStatus, Gender, Prisma, StudentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../common/decorators';
 import { isOrgWide } from '../common/scope';
@@ -35,6 +35,7 @@ export class StudentsService {
       streamId?: string;
       teacherId?: string;
       status?: StudentStatus;
+      enrollmentStatus?: EnrollmentStatus;
     },
   ) {
     const where: Prisma.StudentWhereInput = { ...(await this.baseWhere(user)) };
@@ -43,6 +44,9 @@ export class StudentsService {
     if (opts.streamId) where.streamId = opts.streamId;
     if (opts.teacherId) where.primaryTeacherId = opts.teacherId;
     if (opts.status) where.status = opts.status;
+    // The official roster only ever shows verified pupils by default. Pass
+    // ?enrollmentStatus=PENDING to see the review queue instead.
+    where.enrollmentStatus = opts.enrollmentStatus ?? 'APPROVED';
     // Search covers the two things a sheikh actually knows: the name and the admission number.
     if (opts.q) {
       where.OR = [
@@ -129,6 +133,12 @@ export class StudentsService {
     }
   }
 
+  /**
+   * A Sheikh may register a pupil straight from their own classroom, but the
+   * entry is PENDING until the secretariat verifies it — this catches typos,
+   * duplicates and mistaken school/class assignment before it becomes the
+   * pupil's official record. Admin-created pupils are trusted immediately.
+   */
   async create(
     user: AuthUser,
     data: {
@@ -143,6 +153,14 @@ export class StudentsService {
       primaryTeacherId?: string;
     },
   ) {
+    const selfRegistering = !isOrgWide(user);
+    let ownTeacherId: string | null = null;
+    if (selfRegistering) {
+      const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
+      if (!teacher) throw new ForbiddenException('Only a registered sheikh may add pupils');
+      ownTeacherId = teacher.id;
+    }
+
     // An org-wide caller is not bound to a school, so they must name one.
     const schoolId = isOrgWide(user) ? data.schoolId : user.schoolId;
     if (!schoolId) throw new BadRequestException('A school must be selected for this pupil');
@@ -155,8 +173,12 @@ export class StudentsService {
     const clash = await this.prisma.student.findFirst({ where: { schoolId, admissionNo } });
     if (clash) throw new ConflictException(`Admission number "${admissionNo}" is already used at this school`);
 
-    await this.assertConsistent(schoolId, data);
+    // A Sheikh registers straight onto their own roster; only the secretariat
+    // may hand a new pupil to someone else.
+    const primaryTeacherId = selfRegistering ? ownTeacherId : data.primaryTeacherId || null;
+    await this.assertConsistent(schoolId, { ...data, primaryTeacherId: primaryTeacherId ?? undefined });
 
+    const now = new Date();
     return this.prisma.student.create({
       data: {
         schoolId,
@@ -167,7 +189,42 @@ export class StudentsService {
         gender: data.gender,
         guardianName: data.guardianName,
         guardianPhone: data.guardianPhone,
-        primaryTeacherId: data.primaryTeacherId || null,
+        primaryTeacherId,
+        enrollmentStatus: selfRegistering ? 'PENDING' : 'APPROVED',
+        enrolledById: user.id,
+        approvedById: selfRegistering ? null : user.id,
+        approvedAt: selfRegistering ? null : now,
+      },
+    });
+  }
+
+  /** Verifies a Sheikh-submitted registration, making it the pupil's official record. */
+  async approve(user: AuthUser, id: string) {
+    if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may verify an enrolment');
+    const student = await this.assertCanRead(user, id);
+    if (student.enrollmentStatus !== 'PENDING') {
+      throw new ConflictException('This pupil is not awaiting verification');
+    }
+    return this.prisma.student.update({
+      where: { id },
+      data: { enrollmentStatus: 'APPROVED', approvedById: user.id, approvedAt: new Date(), rejectionReason: null },
+    });
+  }
+
+  /** Declines a Sheikh-submitted registration; the record and its history are kept for audit. */
+  async reject(user: AuthUser, id: string, reason?: string) {
+    if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may verify an enrolment');
+    const student = await this.assertCanRead(user, id);
+    if (student.enrollmentStatus !== 'PENDING') {
+      throw new ConflictException('This pupil is not awaiting verification');
+    }
+    return this.prisma.student.update({
+      where: { id },
+      data: {
+        enrollmentStatus: 'REJECTED',
+        approvedById: user.id,
+        approvedAt: new Date(),
+        rejectionReason: reason?.trim() || null,
       },
     });
   }

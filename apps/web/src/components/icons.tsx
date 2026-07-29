@@ -233,6 +233,13 @@ export const Filter = (p: IconProps) => (
   </svg>
 );
 
+export const Smartphone = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="6" y="2" width="12" height="20" rx="2" />
+    <path d="M11 18h2" />
+  </svg>
+);
+
 export const Trophy = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />

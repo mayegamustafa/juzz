@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth, canEdit } from '@/lib/auth';
 import { PageHeader, Spinner, Empty } from '@/components/ui';
+import { Lock } from '@/components/icons';
 
 interface School { id: string; code: string; name: string }
 interface SchoolClass { id: string; name: string }
-interface Row { id: string; fullName: string; status: string | null }
+interface Row { id: string; fullName: string; status: string | null; recordId: string | null; canEdit: boolean }
 
 const STATUSES = ['PRESENT', 'ABSENT', 'SICK', 'PERMISSION'] as const;
 const STATUS_STYLE: Record<string, string> = {
@@ -59,7 +60,7 @@ export default function AttendancePage() {
   }, [load]);
 
   const setStatus = async (row: Row, status: string) => {
-    if (!editable) return;
+    if (!editable || !row.canEdit) return;
     setSaving(row.id);
     setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status } : r)));
     try {
@@ -116,21 +117,27 @@ export default function AttendancePage() {
           {rows.map((r) => (
             <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3" style={{ borderColor: 'var(--border)' }}>
               <span className={`font-medium ${saving === r.id ? 'opacity-50' : ''}`}>{r.fullName}</span>
-              <div className="flex gap-1">
-                {STATUSES.map((s) => (
-                  <button
-                    key={s}
-                    disabled={!editable}
-                    onClick={() => setStatus(r, s)}
-                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                      r.status === s ? STATUS_STYLE[s] : 'border'
-                    }`}
-                    style={r.status === s ? {} : { borderColor: 'var(--border)', color: 'var(--muted)' }}
-                  >
-                    {s[0]}{s.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
+              {!r.canEdit ? (
+                <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }} title="Locked after 24h — ask the manager to unlock it">
+                  <Lock size={12} /> {r.status ? r.status[0] + r.status.slice(1).toLowerCase() : '—'} · locked
+                </span>
+              ) : (
+                <div className="flex gap-1">
+                  {STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      disabled={!editable}
+                      onClick={() => setStatus(r, s)}
+                      className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                        r.status === s ? STATUS_STYLE[s] : 'border'
+                      }`}
+                      style={r.status === s ? {} : { borderColor: 'var(--border)', color: 'var(--muted)' }}
+                    >
+                      {s[0]}{s.slice(1).toLowerCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

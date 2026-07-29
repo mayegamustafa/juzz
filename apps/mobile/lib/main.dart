@@ -6,6 +6,7 @@ import 'core/theme.dart';
 import 'state/providers.dart';
 import 'ui/home_shell.dart';
 import 'ui/login_screen.dart';
+import 'ui/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -4,6 +4,12 @@ export const APP_NAME = 'SAK/CPS Juzz Tracking System';
 export const APP_SHORT = 'Juzz Tracking';
 export const ORG_NAME = "Sir Apollo Kaggwa Schools & City Parents' School";
 
+// The organisation's letterhead — used verbatim on the login screen and at the
+// top of every printed report, matching the paper documents Sheikhs already know.
+export const LETTERHEAD_TITLE = 'Sir Apollo Kaggwa Schools – Since 1996';
+export const LETTERHEAD_MOTTO = '"Where your child is guaranteed a first grade"';
+export const LETTERHEAD_DEPARTMENT = 'Theology Department';
+
 /**
  * The two school crests. Both are crimson, so they sit on a light chip rather
  * than the emerald surface — otherwise they fight the app's palette.

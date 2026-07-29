@@ -4,6 +4,17 @@ import { join } from 'path';
 export const APP_NAME = 'SAK/CPS Juzz Tracking System';
 export const ORG_NAME = "Sir Apollo Kaggwa Schools & City Parents' School";
 
+// The organisation's letterhead, used verbatim at the top of every printed
+// report and PDF. Line 4 is filled in per-document with the specific school
+// (a pupil's own school, or "All Schools" for an organisation-wide report).
+export const LETTERHEAD_TITLE = 'SIR APOLLO KAGGWA SCHOOLS – SINCE 1996';
+export const LETTERHEAD_MOTTO = '"Where your child is guaranteed a first grade"';
+export const LETTERHEAD_DEPARTMENT = 'THEOLOGY DEPARTMENT';
+
+export function letterheadSchoolLine(schoolName?: string | null): string {
+  return schoolName ?? 'All Schools';
+}
+
 export const EMERALD = '#047857';
 export const EMERALD_DARK = '#065F46';
 export const GOLD = '#B8860B';
@@ -27,18 +38,13 @@ function findAsset(name: string): Buffer | null {
   return null;
 }
 
-let cached: { sak: Buffer | null; cps: Buffer | null } | undefined;
 let cachedSmall: { sak: Buffer | null; cps: Buffer | null } | undefined;
 
-/** Full-size crests, for Excel. Read once — a report should not hit the disk per page. */
-export function logos(): { sak: Buffer | null; cps: Buffer | null } {
-  if (!cached) cached = { sak: findAsset('sak.png'), cps: findAsset('cps.png') };
-  return cached;
-}
-
 /**
- * 96px crests for PDF headers. The full-size ones inflate a multi-page report by
- * a megabyte, and they are drawn at 40px anyway.
+ * 96px crests — both are drawn at ~46-48px in every report, so this is the only
+ * size the export service needs. Read (and cached) once; embedding a full-size
+ * PNG in a PDF/Excel document that reuses it per page/sheet is what inflated a
+ * 4-page report to over a megabyte before this was introduced.
  */
 export function logosSmall(): { sak: Buffer | null; cps: Buffer | null } {
   if (!cachedSmall) {

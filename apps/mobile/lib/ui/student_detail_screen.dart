@@ -10,6 +10,16 @@ import 'widgets.dart';
 const _grades = ['EXCELLENT', 'VERY_GOOD', 'GOOD', 'FAIR', 'POOR'];
 const _mistakeTypes = ['TAJWEED', 'MEMORIZATION', 'PRONUNCIATION'];
 
+/// Quick presets for the memorization fraction picker — matches the web app's
+/// options so a Sheikh sees the same scale on both.
+const _fractionPresets = [
+  (value: 0.0, label: 'Not started'),
+  (value: 0.25, label: '¼ — just begun'),
+  (value: 0.5, label: '½ — halfway'),
+  (value: 0.75, label: '¾ — nearly done'),
+  (value: 1.0, label: 'Memorized'),
+];
+
 Color gradeColor(String g) => switch (g) {
       'EXCELLENT' => Brand.excellent,
       'VERY_GOOD' => Brand.veryGood,
@@ -30,8 +40,8 @@ class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs = TabController(length: 5, vsync: this);
 
-  /// Optimistic local view of memorized surahs; the outbox carries the writes.
-  Set<String>? _memorized;
+  /// Optimistic local view of memorization fractions; the outbox carries the writes.
+  Map<String, double>? _fractions;
 
   @override
   void dispose() {
@@ -60,7 +70,7 @@ class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen>
             body: const EmptyState(icon: Icons.person_off_outlined, title: 'Student not found'),
           );
         }
-        _memorized ??= {...student.memorizedSurahIds};
+        _fractions ??= {...student.surahFractions};
 
         return Scaffold(
           appBar: AppBar(
@@ -81,7 +91,11 @@ class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen>
           body: Column(
             children: [
               const SyncBanner(),
-              _Header(student: student, target: b.target, memorized: _memorized!.length),
+              _Header(
+                student: student,
+                target: b.target,
+                memorizedFraction: _fractions!.values.fold(0.0, (a, b) => a + b),
+              ),
               Expanded(
                 child: TabBarView(
                   controller: _tabs,
@@ -89,8 +103,8 @@ class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen>
                     _MemorizationTab(
                       student: student,
                       surahs: b.surahs,
-                      memorized: _memorized!,
-                      onToggle: _toggleSurah,
+                      fractions: _fractions!,
+                      onSetFraction: _setFraction,
                     ),
                     _RevisionTab(student: student, surahs: b.surahs),
                     _AssessmentTab(student: student),
@@ -106,20 +120,24 @@ class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen>
     );
   }
 
-  Future<void> _toggleSurah(Student student, Surah surah) async {
-    final nowMemorized = !_memorized!.contains(surah.id);
+  Future<void> _setFraction(Student student, Surah surah, double value) async {
     setState(() {
-      nowMemorized ? _memorized!.add(surah.id) : _memorized!.remove(surah.id);
+      if (value <= 0) {
+        _fractions!.remove(surah.id);
+      } else {
+        _fractions![surah.id] = value;
+      }
     });
 
     await ref.read(repositoryProvider).setMemorization(
           studentId: student.id,
           surahId: surah.id,
-          memorized: nowMemorized,
+          fraction: value,
         );
 
     if (mounted) {
-      showSnack(context, nowMemorized ? '${surah.name} marked memorized' : '${surah.name} unmarked');
+      final pct = (value * 100).round();
+      showSnack(context, value <= 0 ? '${surah.name} unmarked' : '${surah.name} set to $pct%');
     }
   }
 }
@@ -127,14 +145,14 @@ class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen>
 class _Header extends StatelessWidget {
   final Student student;
   final int target;
-  final int memorized;
+  final double memorizedFraction;
 
-  const _Header({required this.student, required this.target, required this.memorized});
+  const _Header({required this.student, required this.target, required this.memorizedFraction});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final percent = target == 0 ? 0.0 : (memorized / target) * 100;
+    final percent = target == 0 ? 0.0 : (memorizedFraction / target) * 100;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -145,8 +163,15 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${student.level} · ${student.schoolCode} · Adm ${student.admissionNo}',
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+          Row(
+            children: [
+              Expanded(
+                child: Text('${student.level} · ${student.schoolCode} · Adm ${student.admissionNo}',
+                    style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+              ),
+              if (student.enrollmentStatus != EnrollmentStatus.approved) _EnrollmentBadge(student.enrollmentStatus),
+            ],
+          ),
           if (student.guardianName != null) ...[
             const SizedBox(height: 2),
             Text('Guardian: ${student.guardianName}${student.guardianPhone != null ? ' · ${student.guardianPhone}' : ''}',
@@ -157,11 +182,30 @@ class _Header extends StatelessWidget {
             children: [
               Expanded(child: ProgressBar(percent: percent)),
               const SizedBox(width: 12),
-              Text('$memorized/$target  ·  ${percent.toStringAsFixed(0)}%',
+              Text('${memorizedFraction.toStringAsFixed(0)}/$target  ·  ${percent.toStringAsFixed(0)}%',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EnrollmentBadge extends StatelessWidget {
+  final EnrollmentStatus status;
+  const _EnrollmentBadge(this.status);
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = status == EnrollmentStatus.pending;
+    final color = pending ? Brand.fair : Brand.poor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
+      child: Text(
+        pending ? 'Awaiting verification' : 'Rejected',
+        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }
@@ -172,14 +216,14 @@ class _Header extends StatelessWidget {
 class _MemorizationTab extends StatelessWidget {
   final Student student;
   final List<Surah> surahs;
-  final Set<String> memorized;
-  final Future<void> Function(Student, Surah) onToggle;
+  final Map<String, double> fractions;
+  final Future<void> Function(Student, Surah, double) onSetFraction;
 
   const _MemorizationTab({
     required this.student,
     required this.surahs,
-    required this.memorized,
-    required this.onToggle,
+    required this.fractions,
+    required this.onSetFraction,
   });
 
   @override
@@ -194,7 +238,7 @@ class _MemorizationTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       children: [
-        Text('Tap a surah to mark it memorized',
+        Text('Tap a surah to set progress',
             style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 14),
         for (final juz in juzKeys) ...[
@@ -210,8 +254,8 @@ class _MemorizationTab extends StatelessWidget {
               for (final s in byJuz[juz]!)
                 _SurahChip(
                   surah: s,
-                  selected: memorized.contains(s.id),
-                  onTap: () => onToggle(student, s),
+                  fraction: fractions[s.id] ?? 0,
+                  onTap: () => _openPicker(context, s),
                 ),
             ],
           ),
@@ -220,18 +264,67 @@ class _MemorizationTab extends StatelessWidget {
       ],
     );
   }
+
+  Future<void> _openPicker(BuildContext context, Surah surah) async {
+    final current = fractions[surah.id] ?? 0;
+    final picked = await showModalBottomSheet<double>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('${surah.number}. ${surah.name}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ],
+              ),
+            ),
+            for (final p in _fractionPresets)
+              ListTile(
+                leading: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: p.value >= 1
+                      ? const CircleAvatar(backgroundColor: Brand.emerald, child: Icon(Icons.check, size: 14, color: Colors.white))
+                      : p.value > 0
+                          ? CircleAvatar(
+                              backgroundColor: Colors.orange,
+                              child: Text('${(p.value * 100).round()}', style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold)),
+                            )
+                          : CircleAvatar(backgroundColor: Colors.transparent, child: Icon(Icons.circle_outlined, size: 16, color: Theme.of(ctx).colorScheme.outline)),
+                ),
+                title: Text(p.label),
+                trailing: (current - p.value).abs() < 0.01 ? const Icon(Icons.check_rounded, color: Brand.emerald) : null,
+                onTap: () => Navigator.pop(ctx, p.value),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) await onSetFraction(student, surah, picked);
+  }
 }
 
 class _SurahChip extends StatelessWidget {
   final Surah surah;
-  final bool selected;
+  final double fraction;
   final VoidCallback onTap;
 
-  const _SurahChip({required this.surah, required this.selected, required this.onTap});
+  const _SurahChip({required this.surah, required this.fraction, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final done = fraction >= 1;
+    final partial = fraction > 0 && fraction < 1;
+    final color = done ? Brand.emerald : (partial ? Colors.orange : null);
+
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
@@ -239,23 +332,27 @@ class _SurahChip extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? Brand.emerald : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color: color ?? scheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: selected ? Brand.emerald : scheme.outlineVariant),
+          border: Border.all(color: color ?? scheme.outlineVariant),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (selected) ...[
+            if (done) ...[
               const Icon(Icons.check_rounded, size: 15, color: Colors.white),
+              const SizedBox(width: 5),
+            ] else if (partial) ...[
+              Text('${(fraction * 100).round()}%',
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(width: 5),
             ],
             Text(
               '${surah.number}. ${surah.name}',
               style: TextStyle(
                 fontSize: 12.5,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                color: selected ? Colors.white : scheme.onSurface,
+                fontWeight: color != null ? FontWeight.w600 : FontWeight.normal,
+                color: color != null ? Colors.white : scheme.onSurface,
               ),
             ),
           ],
@@ -265,17 +362,110 @@ class _SurahChip extends StatelessWidget {
   }
 }
 
-// ---------------- shared record list ----------------
+// ---------------- shared record list (with edit / delete / unlock) ----------------
 
-class _RecordList extends StatelessWidget {
-  final Future<List<RecordEntry>> future;
-  final String emptyText;
-  final Widget Function(RecordEntry)? leading;
+/// One row's action cluster: a Sheikh may edit/delete their own entry for 24h;
+/// after that only the secretariat can, unless they unlock it. Mirrors the web
+/// app's RecordActions component.
+class _RecordActions extends StatelessWidget {
+  final bool canEdit;
+  final bool canManage;
+  final VoidCallback? onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback onUnlock;
 
-  const _RecordList({required this.future, required this.emptyText, this.leading});
+  const _RecordActions({
+    required this.canEdit,
+    required this.canManage,
+    this.onEdit,
+    required this.onDelete,
+    required this.onUnlock,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (!canEdit && !canManage) {
+      return Tooltip(
+        message: 'Locked after 24h — ask the manager to unlock it',
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock_outline_rounded, size: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(width: 3),
+            Text('Locked', style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (canEdit && onEdit != null)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.edit_outlined, size: 17),
+            onPressed: onEdit,
+          ),
+        if (canEdit)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.delete_outline_rounded, size: 17, color: Brand.poor),
+            onPressed: onDelete,
+          ),
+        if (canManage && !canEdit)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.lock_open_rounded, size: 17),
+            tooltip: 'Unlock for the Sheikh (24h)',
+            onPressed: onUnlock,
+          ),
+      ],
+    );
+  }
+}
+
+Future<bool> _confirmDelete(BuildContext context, String what) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('Delete this $what?'),
+      content: const Text('This cannot be undone.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: Brand.poor),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
+}
+
+class _RecordList extends ConsumerWidget {
+  final Future<List<RecordEntry>> future;
+  final String emptyText;
+  final Widget Function(RecordEntry)? leading;
+  final void Function(RecordEntry) onEdit;
+  final Future<void> Function(RecordEntry) onDelete;
+  final Future<void> Function(RecordEntry) onUnlock;
+
+  const _RecordList({
+    required this.future,
+    required this.emptyText,
+    this.leading,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onUnlock,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canManage = (ref.watch(authProvider) is AuthSignedIn)
+        ? (ref.watch(authProvider) as AuthSignedIn).user.isAdmin
+        : false;
+
     return FutureBuilder<List<RecordEntry>>(
       future: future,
       builder: (context, snap) {
@@ -296,8 +486,23 @@ class _RecordList extends StatelessWidget {
               leading: leading?.call(e),
               title: Text(e.label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
               subtitle: e.detail == null ? null : Text(e.detail!, style: const TextStyle(fontSize: 12)),
-              trailing: Text(DateFormat('d MMM').format(e.date),
-                  style: TextStyle(fontSize: 11.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(DateFormat('d MMM').format(e.date),
+                      style: TextStyle(fontSize: 11.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  const SizedBox(width: 6),
+                  _RecordActions(
+                    canEdit: e.canEdit,
+                    canManage: canManage,
+                    onEdit: () => onEdit(e),
+                    onDelete: () async {
+                      if (await _confirmDelete(context, 'entry')) await onDelete(e);
+                    },
+                    onUnlock: () => onUnlock(e),
+                  ),
+                ],
+              ),
             );
           },
         );
@@ -307,11 +512,13 @@ class _RecordList extends StatelessWidget {
 }
 
 /// Wraps a record list with an "Add" FAB that opens a bottom sheet.
-class _RecordTab extends StatefulWidget {
+class _RecordTab extends ConsumerStatefulWidget {
   final Future<List<RecordEntry>> Function() load;
   final String emptyText;
   final String addLabel;
-  final Future<bool> Function(BuildContext) onAdd;
+  final Future<bool> Function(BuildContext, {RecordEntry? editing}) onAdd;
+  final Future<void> Function(RecordEntry) onDelete;
+  final Future<void> Function(RecordEntry) onUnlock;
   final Widget Function(RecordEntry)? leading;
 
   const _RecordTab({
@@ -319,14 +526,16 @@ class _RecordTab extends StatefulWidget {
     required this.emptyText,
     required this.addLabel,
     required this.onAdd,
+    required this.onDelete,
+    required this.onUnlock,
     this.leading,
   });
 
   @override
-  State<_RecordTab> createState() => _RecordTabState();
+  ConsumerState<_RecordTab> createState() => _RecordTabState();
 }
 
-class _RecordTabState extends State<_RecordTab> {
+class _RecordTabState extends ConsumerState<_RecordTab> {
   late Future<List<RecordEntry>> _future = widget.load();
 
   void _reload() => setState(() => _future = widget.load());
@@ -335,7 +544,35 @@ class _RecordTabState extends State<_RecordTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: _RecordList(future: _future, emptyText: widget.emptyText, leading: widget.leading),
+      body: _RecordList(
+        future: _future,
+        emptyText: widget.emptyText,
+        leading: widget.leading,
+        onEdit: (e) async {
+          final saved = await widget.onAdd(context, editing: e);
+          if (saved) _reload();
+        },
+        onDelete: (e) async {
+          try {
+            await widget.onDelete(e);
+            if (mounted) showSnack(context, 'Deleted');
+          } catch (err) {
+            if (mounted) showSnack(context, '$err', error: true);
+          } finally {
+            _reload();
+          }
+        },
+        onUnlock: (e) async {
+          try {
+            await widget.onUnlock(e);
+            if (mounted) showSnack(context, 'Unlocked for the Sheikh for 24 hours');
+          } catch (err) {
+            if (mounted) showSnack(context, '$err', error: true);
+          } finally {
+            _reload();
+          }
+        },
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final added = await widget.onAdd(context);
@@ -362,38 +599,45 @@ class _RevisionTab extends ConsumerWidget {
       load: () => repo.revisions(student.id),
       emptyText: 'No revision recorded yet',
       addLabel: 'Record revision',
-      onAdd: (ctx) => _sheet(ctx, ref),
+      onAdd: (ctx, {editing}) => _sheet(ctx, ref, editing: editing),
+      onDelete: (e) => repo.removeRevision(e.id),
+      onUnlock: (e) => repo.unlockRevision(e.id),
     );
   }
 
-  Future<bool> _sheet(BuildContext context, WidgetRef ref) async {
+  Future<bool> _sheet(BuildContext context, WidgetRef ref, {RecordEntry? editing}) async {
     Surah? surah;
-    int? score;
+    int? score = editing != null ? int.tryParse((editing.detail ?? '').split('/').first) : null;
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _SheetScaffold(
-        title: 'Record revision',
+        title: editing == null ? 'Record revision' : 'Edit revision',
         onSave: () async {
-          await ref.read(repositoryProvider).addRevision(
-                studentId: student.id,
-                surahId: surah?.id,
-                performanceScore: score,
-              );
+          if (editing == null) {
+            await ref.read(repositoryProvider).addRevision(
+                  studentId: student.id,
+                  surahId: surah?.id,
+                  performanceScore: score,
+                );
+          } else {
+            await ref.read(repositoryProvider).updateRevision(editing.id, performanceScore: score);
+          }
           if (ctx.mounted) Navigator.pop(ctx, true);
         },
         builder: (setSheetState) => [
-          _SurahPicker(
-            surahs: surahs,
-            selected: surah,
-            onChanged: (s) => setSheetState(() => surah = s),
-          ),
-          const SizedBox(height: 16),
-          _ScoreField(onChanged: (v) => score = v),
+          if (editing == null)
+            _SurahPicker(
+              surahs: surahs,
+              selected: surah,
+              onChanged: (s) => setSheetState(() => surah = s),
+            ),
+          if (editing == null) const SizedBox(height: 16),
+          _ScoreField(initial: score, onChanged: (v) => score = v),
         ],
       ),
     );
-    if (result == true && context.mounted) showSnack(context, 'Revision saved');
+    if (result == true && context.mounted) showSnack(context, editing == null ? 'Revision saved' : 'Revision updated');
     return result == true;
   }
 }
@@ -415,24 +659,26 @@ class _AssessmentTab extends ConsumerWidget {
         radius: 5,
         backgroundColor: gradeColor(e.label.replaceAll(' ', '_')),
       ),
-      onAdd: (ctx) => _sheet(ctx, ref),
+      onAdd: (ctx, {editing}) => _sheet(ctx, ref, editing: editing),
+      onDelete: (e) => repo.removeAssessment(e.id),
+      onUnlock: (e) => repo.unlockAssessment(e.id),
     );
   }
 
-  Future<bool> _sheet(BuildContext context, WidgetRef ref) async {
-    String grade = _grades.first;
-    int? score;
+  Future<bool> _sheet(BuildContext context, WidgetRef ref, {RecordEntry? editing}) async {
+    String grade = editing != null ? editing.label.replaceAll(' ', '_') : _grades.first;
+    int? score = editing != null ? int.tryParse((editing.detail ?? '').split('/').first) : null;
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _SheetScaffold(
-        title: 'Daily assessment',
+        title: editing == null ? 'Daily assessment' : 'Edit assessment',
         onSave: () async {
-          await ref.read(repositoryProvider).addAssessment(
-                studentId: student.id,
-                grade: grade,
-                score: score,
-              );
+          if (editing == null) {
+            await ref.read(repositoryProvider).addAssessment(studentId: student.id, grade: grade, score: score);
+          } else {
+            await ref.read(repositoryProvider).updateAssessment(editing.id, grade: grade, score: score);
+          }
           if (ctx.mounted) Navigator.pop(ctx, true);
         },
         builder: (setSheetState) => [
@@ -453,11 +699,11 @@ class _AssessmentTab extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 18),
-          _ScoreField(onChanged: (v) => score = v),
+          _ScoreField(initial: score, onChanged: (v) => score = v),
         ],
       ),
     );
-    if (result == true && context.mounted) showSnack(context, 'Assessment saved');
+    if (result == true && context.mounted) showSnack(context, editing == null ? 'Assessment saved' : 'Assessment updated');
     return result == true;
   }
 }
@@ -477,26 +723,32 @@ class _MistakesTab extends ConsumerWidget {
       emptyText: 'No mistakes recorded',
       addLabel: 'Record mistake',
       leading: (_) => const Icon(Icons.warning_amber_rounded, size: 18, color: Brand.fair),
-      onAdd: (ctx) => _sheet(ctx, ref),
+      onAdd: (ctx, {editing}) => _sheet(ctx, ref, editing: editing),
+      onDelete: (e) => repo.removeMistake(e.id),
+      onUnlock: (e) => repo.unlockMistake(e.id),
     );
   }
 
-  Future<bool> _sheet(BuildContext context, WidgetRef ref) async {
-    String type = _mistakeTypes.first;
-    int count = 1;
+  Future<bool> _sheet(BuildContext context, WidgetRef ref, {RecordEntry? editing}) async {
+    String type = editing != null ? editing.label : _mistakeTypes.first;
+    int count = editing != null ? (int.tryParse(RegExp(r'×(\d+)').firstMatch(editing.detail ?? '')?.group(1) ?? '1') ?? 1) : 1;
     Surah? surah;
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _SheetScaffold(
-        title: 'Record mistake',
+        title: editing == null ? 'Record mistake' : 'Edit mistake',
         onSave: () async {
-          await ref.read(repositoryProvider).addMistake(
-                studentId: student.id,
-                type: type,
-                count: count,
-                surahId: surah?.id,
-              );
+          if (editing == null) {
+            await ref.read(repositoryProvider).addMistake(
+                  studentId: student.id,
+                  type: type,
+                  count: count,
+                  surahId: surah?.id,
+                );
+          } else {
+            await ref.read(repositoryProvider).updateMistake(editing.id, type: type, count: count);
+          }
           if (ctx.mounted) Navigator.pop(ctx, true);
         },
         builder: (setSheetState) => [
@@ -532,16 +784,18 @@ class _MistakesTab extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _SurahPicker(
-            surahs: surahs,
-            selected: surah,
-            onChanged: (s) => setSheetState(() => surah = s),
-          ),
+          if (editing == null) ...[
+            const SizedBox(height: 16),
+            _SurahPicker(
+              surahs: surahs,
+              selected: surah,
+              onChanged: (s) => setSheetState(() => surah = s),
+            ),
+          ],
         ],
       ),
     );
-    if (result == true && context.mounted) showSnack(context, 'Mistake recorded');
+    if (result == true && context.mounted) showSnack(context, editing == null ? 'Mistake recorded' : 'Mistake updated');
     return result == true;
   }
 }
@@ -560,21 +814,27 @@ class _RemarksTab extends ConsumerWidget {
       emptyText: 'No remarks yet',
       addLabel: 'Add remark',
       leading: (_) => const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-      onAdd: (ctx) => _sheet(ctx, ref),
+      onAdd: (ctx, {editing}) => _sheet(ctx, ref, editing: editing),
+      onDelete: (e) => repo.removeRemark(e.id),
+      onUnlock: (e) => repo.unlockRemark(e.id),
     );
   }
 
-  Future<bool> _sheet(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
+  Future<bool> _sheet(BuildContext context, WidgetRef ref, {RecordEntry? editing}) async {
+    final controller = TextEditingController(text: editing?.label ?? '');
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _SheetScaffold(
-        title: 'Teacher remark',
+        title: editing == null ? 'Teacher remark' : 'Edit remark',
         onSave: () async {
           final text = controller.text.trim();
           if (text.isEmpty) return;
-          await ref.read(repositoryProvider).addRemark(studentId: student.id, body: text);
+          if (editing == null) {
+            await ref.read(repositoryProvider).addRemark(studentId: student.id, body: text);
+          } else {
+            await ref.read(repositoryProvider).updateRemark(editing.id, text);
+          }
           if (ctx.mounted) Navigator.pop(ctx, true);
         },
         builder: (_) => [
@@ -590,7 +850,7 @@ class _RemarksTab extends ConsumerWidget {
       ),
     );
     controller.dispose();
-    if (result == true && context.mounted) showSnack(context, 'Remark added');
+    if (result == true && context.mounted) showSnack(context, editing == null ? 'Remark added' : 'Remark updated');
     return result == true;
   }
 }
@@ -687,12 +947,14 @@ class _SurahPicker extends StatelessWidget {
 }
 
 class _ScoreField extends StatelessWidget {
+  final int? initial;
   final ValueChanged<int?> onChanged;
-  const _ScoreField({required this.onChanged});
+  const _ScoreField({this.initial, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: TextEditingController(text: initial?.toString() ?? ''),
       keyboardType: TextInputType.number,
       decoration: const InputDecoration(labelText: 'Score out of 100 (optional)', isDense: true),
       onChanged: (v) {

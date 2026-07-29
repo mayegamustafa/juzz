@@ -5,6 +5,13 @@ const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        // System stacks only — no external font fetch, so the build never
+        // depends on network access to Google Fonts (which Railway/CI may not
+        // have unrestricted egress to either).
+        sans: ['ui-sans-serif', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', 'Times New Roman', 'ui-serif', 'serif'],
+      },
       colors: {
         // Islamic-professional palette: emerald primary, gold secondary
         emerald: {

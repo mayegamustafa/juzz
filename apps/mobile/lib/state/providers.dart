@@ -9,6 +9,7 @@ import '../data/notification_service.dart';
 import '../data/repository.dart';
 import '../data/sync_service.dart';
 import '../data/token_store.dart';
+import '../data/update_service.dart';
 import '../models/models.dart';
 
 // ---------- singletons ----------
@@ -33,6 +34,8 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
   ref.onDispose(s.dispose);
   return s;
 });
+
+final updateServiceProvider = Provider<UpdateService>((ref) => UpdateService(ref.watch(apiClientProvider)));
 
 final repositoryProvider = Provider<Repository>((ref) => Repository(
       ref.watch(apiClientProvider),

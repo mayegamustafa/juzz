@@ -17,6 +17,7 @@ import {
   Reports,
   Download,
   Target,
+  Smartphone,
   Menu,
   Sun,
   Moon,
@@ -42,6 +43,7 @@ const NAV: NavItem[] = [
   { href: '/analytics', label: 'Analytics', icon: Reports },
   { href: '/reports', label: 'Reports', icon: Download },
   { href: '/targets', label: 'Targets', icon: Target, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
+  { href: '/mobile-app', label: 'Teacher app', icon: Smartphone, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

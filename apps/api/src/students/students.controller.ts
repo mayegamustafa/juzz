@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { Gender, StudentStatus } from '@prisma/client';
+import { EnrollmentStatus, Gender, StudentStatus } from '@prisma/client';
 import { StudentsService } from './students.service';
 import { Roles, CurrentUser, AuthUser } from '../common/decorators';
 import { PaginationQuery } from '../common/dto';
@@ -12,6 +12,10 @@ class ListStudentsQuery extends PaginationQuery {
   @IsOptional() @IsString() streamId?: string;
   @IsOptional() @IsString() teacherId?: string;
   @IsOptional() @IsIn(['ACTIVE', 'INACTIVE', 'GRADUATED', 'TRANSFERRED']) status?: StudentStatus;
+  @IsOptional() @IsIn(['PENDING', 'APPROVED', 'REJECTED']) enrollmentStatus?: EnrollmentStatus;
+}
+class RejectDto {
+  @IsOptional() @IsString() reason?: string;
 }
 class CreateStudentDto {
   @IsOptional() @IsString() schoolId?: string;
@@ -58,10 +62,23 @@ export class StudentsController {
     return this.students.progress(user, id);
   }
 
-  @Roles(...ADMIN_ROLES)
+  /** A Sheikh may register a pupil; it becomes official once the secretariat approves it. */
+  @Roles(...RECORDING_ROLES)
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateStudentDto) {
     return this.students.create(user, dto);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Post(':id/approve')
+  approve(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.students.approve(user, id);
+  }
+
+  @Roles(...ADMIN_ROLES)
+  @Post(':id/reject')
+  reject(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: RejectDto) {
+    return this.students.reject(user, id, dto.reason);
   }
 
   /**

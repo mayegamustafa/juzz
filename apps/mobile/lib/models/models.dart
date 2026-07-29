@@ -37,6 +37,10 @@ class SessionUser {
 
   /// Sheikhs record progress; the secretariat may also correct records.
   bool get canRecord => role == 'TEACHER' || role == 'SUPERVISOR' || role == 'SUPER_ADMIN';
+
+  /// The secretariat: verifies enrolments, unlocks locked entries, always
+  /// editable regardless of the 24h window.
+  bool get isAdmin => role == 'SUPERVISOR' || role == 'SUPER_ADMIN';
 }
 
 class Surah {
@@ -75,20 +79,54 @@ class Surah {
       };
 }
 
+/// A class's stream/section (e.g. "P.1 A"). Named `SchoolStream`, not
+/// `Stream`, to avoid colliding with dart:async's Stream type.
+class SchoolStream {
+  final String id;
+  final String name;
+  const SchoolStream({required this.id, required this.name});
+
+  factory SchoolStream.fromJson(Map<String, dynamic> j) =>
+      SchoolStream(id: j['id'] as String, name: j['name'] as String? ?? '');
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+}
+
 class SchoolClass {
   final String id;
   final String name;
   final String level;
+  final List<SchoolStream> streams;
 
-  const SchoolClass({required this.id, required this.name, required this.level});
+  const SchoolClass({required this.id, required this.name, required this.level, this.streams = const []});
 
   factory SchoolClass.fromJson(Map<String, dynamic> j) => SchoolClass(
         id: j['id'] as String,
         name: j['name'] as String? ?? '',
         level: j['level'] as String? ?? '',
+        streams: ((j['streams'] as List?) ?? const [])
+            .map((e) => SchoolStream.fromJson((e as Map).cast<String, dynamic>()))
+            .toList(),
       );
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'level': level};
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'level': level,
+        'streams': streams.map((s) => s.toJson()).toList(),
+      };
+}
+
+enum EnrollmentStatus {
+  pending('PENDING'),
+  approved('APPROVED'),
+  rejected('REJECTED');
+
+  const EnrollmentStatus(this.wire);
+  final String wire;
+
+  static EnrollmentStatus fromWire(String? v) =>
+      values.firstWhere((s) => s.wire == v, orElse: () => EnrollmentStatus.approved);
 }
 
 class Student {
@@ -104,9 +142,11 @@ class Student {
   final String? streamName;
   final String schoolCode;
   final String schoolName;
+  final EnrollmentStatus enrollmentStatus;
 
-  /// Surah ids this student has memorized. Mutated locally on optimistic edits.
-  final Set<String> memorizedSurahIds;
+  /// surahId -> fraction memorized (0..1). A Sheikh may record partial
+  /// progress, not just done/not-done. Mutated locally on optimistic edits.
+  final Map<String, double> surahFractions;
   final int memorized;
   final double percent;
 
@@ -123,7 +163,8 @@ class Student {
     this.streamName,
     required this.schoolCode,
     required this.schoolName,
-    required this.memorizedSurahIds,
+    this.enrollmentStatus = EnrollmentStatus.approved,
+    required this.surahFractions,
     required this.memorized,
     required this.percent,
   });
@@ -141,9 +182,9 @@ class Student {
         streamName: j['streamName'] as String?,
         schoolCode: j['schoolCode'] as String? ?? '',
         schoolName: j['schoolName'] as String? ?? '',
-        memorizedSurahIds: ((j['memorizedSurahIds'] as List?) ?? const [])
-            .map((e) => e as String)
-            .toSet(),
+        enrollmentStatus: EnrollmentStatus.fromWire(j['enrollmentStatus'] as String?),
+        surahFractions: ((j['surahFractions'] as Map?) ?? const {})
+            .map((k, v) => MapEntry(k as String, _dbl(v))),
         memorized: _int(j['memorized']),
         percent: _dbl(j['percent']),
       );
@@ -161,12 +202,13 @@ class Student {
         'streamName': streamName,
         'schoolCode': schoolCode,
         'schoolName': schoolName,
-        'memorizedSurahIds': memorizedSurahIds.toList(),
+        'enrollmentStatus': enrollmentStatus.wire,
+        'surahFractions': surahFractions,
         'memorized': memorized,
         'percent': percent,
       };
 
-  Student copyWith({Set<String>? memorizedSurahIds, int? memorized, double? percent}) => Student(
+  Student copyWith({Map<String, double>? surahFractions, int? memorized, double? percent}) => Student(
         id: id,
         fullName: fullName,
         admissionNo: admissionNo,
@@ -179,7 +221,8 @@ class Student {
         streamName: streamName,
         schoolCode: schoolCode,
         schoolName: schoolName,
-        memorizedSurahIds: memorizedSurahIds ?? this.memorizedSurahIds,
+        enrollmentStatus: enrollmentStatus,
+        surahFractions: surahFractions ?? this.surahFractions,
         memorized: memorized ?? this.memorized,
         percent: percent ?? this.percent,
       );
@@ -254,12 +297,17 @@ class RecordEntry {
   final String label;
   final String? detail;
   final DateTime date;
+  /// Whether the current user may still edit/delete this entry: they recorded
+  /// it less than 24h ago (or the secretariat unlocked it), or they are the
+  /// secretariat themselves.
+  final bool canEdit;
 
   const RecordEntry({
     required this.id,
     required this.label,
     this.detail,
     required this.date,
+    this.canEdit = false,
   });
 }
 
@@ -286,9 +334,22 @@ class AttendanceRow {
   final String studentId;
   final String fullName;
   final AttendanceStatus? status;
+  final String? recordId;
+  final bool canEdit;
 
-  const AttendanceRow({required this.studentId, required this.fullName, this.status});
+  const AttendanceRow({
+    required this.studentId,
+    required this.fullName,
+    this.status,
+    this.recordId,
+    this.canEdit = true,
+  });
 
-  AttendanceRow copyWith({AttendanceStatus? status}) =>
-      AttendanceRow(studentId: studentId, fullName: fullName, status: status ?? this.status);
+  AttendanceRow copyWith({AttendanceStatus? status}) => AttendanceRow(
+        studentId: studentId,
+        fullName: fullName,
+        status: status ?? this.status,
+        recordId: recordId,
+        canEdit: canEdit,
+      );
 }

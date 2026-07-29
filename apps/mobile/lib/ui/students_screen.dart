@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/theme.dart';
 import '../models/models.dart';
 import '../state/providers.dart';
+import 'register_student_screen.dart';
 import 'student_detail_screen.dart';
 import 'widgets.dart';
 
@@ -28,7 +30,16 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
     final async = ref.watch(bootstrapProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My students')),
+      appBar: AppBar(
+        title: const Text('My students'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            tooltip: 'Register pupil',
+            onPressed: () => _openRegister(context, async.value?.classes ?? const []),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           const SyncBanner(),
@@ -98,6 +109,16 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
       ),
     );
   }
+
+  Future<void> _openRegister(BuildContext context, List<SchoolClass> classes) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => RegisterStudentScreen(classes: classes)),
+    );
+    if (saved == true) {
+      await ref.read(repositoryProvider).bootstrap(forceRefresh: true);
+      ref.invalidate(bootstrapProvider);
+    }
+  }
 }
 
 class _StudentCard extends StatelessWidget {
@@ -139,10 +160,20 @@ class _StudentCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(student.fullName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(student.fullName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                        ),
+                        if (student.enrollmentStatus != EnrollmentStatus.approved) ...[
+                          const SizedBox(width: 6),
+                          _StatusDot(student.enrollmentStatus),
+                        ],
+                      ],
+                    ),
                     const SizedBox(height: 2),
                     Text('${student.level} · ${student.admissionNo}',
                         style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
@@ -163,6 +194,28 @@ class _StudentCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusDot extends StatelessWidget {
+  final EnrollmentStatus status;
+  const _StatusDot(this.status);
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = status == EnrollmentStatus.pending;
+    final color = pending ? Brand.fair : Brand.poor;
+    return Tooltip(
+      message: pending ? 'Awaiting verification' : 'Rejected by the secretariat',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
+        child: Text(
+          pending ? 'Pending' : 'Rejected',
+          style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: color),
         ),
       ),
     );

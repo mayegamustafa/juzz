@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../common/decorators';
 import { isOrgWide } from '../common/scope';
 import { TARGET_SURAH_COUNT, progressPercent } from '../common/progress';
+import { assertEditable, isEditable, unlockedUntilValue } from '../common/edit-lock';
 
 @Injectable()
 export class QuranService {
@@ -159,10 +160,42 @@ export class QuranService {
 
   async listRevisions(user: AuthUser, studentId: string) {
     await this.assertCanRead(user, studentId);
-    return this.prisma.revisionRecord.findMany({
+    const rows = await this.prisma.revisionRecord.findMany({
       where: { studentId },
       orderBy: { revisedAt: 'desc' },
       include: { surah: { select: { number: true, nameTransliteration: true } } },
+    });
+    return rows.map((r) => ({ ...r, canEdit: isEditable(user, r) }));
+  }
+
+  async updateRevision(
+    user: AuthUser,
+    id: string,
+    data: { performanceScore?: number; note?: string },
+  ) {
+    const rec = await this.prisma.revisionRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Revision not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    return this.prisma.revisionRecord.update({ where: { id }, data });
+  }
+
+  async removeRevision(user: AuthUser, id: string) {
+    const rec = await this.prisma.revisionRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Revision not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    await this.prisma.revisionRecord.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  async unlockRevision(user: AuthUser, id: string) {
+    if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may unlock an entry');
+    const rec = await this.prisma.revisionRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Revision not found');
+    return this.prisma.revisionRecord.update({
+      where: { id },
+      data: { unlockedUntil: unlockedUntilValue(), unlockedById: user.id },
     });
   }
 
@@ -186,9 +219,41 @@ export class QuranService {
 
   async listAssessments(user: AuthUser, studentId: string) {
     await this.assertCanRead(user, studentId);
-    return this.prisma.assessmentRecord.findMany({
+    const rows = await this.prisma.assessmentRecord.findMany({
       where: { studentId },
       orderBy: { assessedAt: 'desc' },
+    });
+    return rows.map((r) => ({ ...r, canEdit: isEditable(user, r) }));
+  }
+
+  async updateAssessment(
+    user: AuthUser,
+    id: string,
+    data: { grade?: string; score?: number; note?: string },
+  ) {
+    const rec = await this.prisma.assessmentRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Assessment not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    return this.prisma.assessmentRecord.update({ where: { id }, data: data as any });
+  }
+
+  async removeAssessment(user: AuthUser, id: string) {
+    const rec = await this.prisma.assessmentRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Assessment not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    await this.prisma.assessmentRecord.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  async unlockAssessment(user: AuthUser, id: string) {
+    if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may unlock an entry');
+    const rec = await this.prisma.assessmentRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Assessment not found');
+    return this.prisma.assessmentRecord.update({
+      where: { id },
+      data: { unlockedUntil: unlockedUntilValue(), unlockedById: user.id },
     });
   }
 
@@ -214,21 +279,50 @@ export class QuranService {
 
   async listMistakes(user: AuthUser, studentId: string) {
     await this.assertCanRead(user, studentId);
-    return this.prisma.mistakeRecord.findMany({
+    const rows = await this.prisma.mistakeRecord.findMany({
       where: { studentId },
       orderBy: { occurredAt: 'desc' },
       include: { surah: { select: { number: true, nameTransliteration: true } } },
+    });
+    return rows.map((r) => ({ ...r, canEdit: isEditable(user, r) }));
+  }
+
+  async updateMistake(user: AuthUser, id: string, data: { type?: string; count?: number; note?: string }) {
+    const rec = await this.prisma.mistakeRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Mistake not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    return this.prisma.mistakeRecord.update({ where: { id }, data: data as any });
+  }
+
+  async removeMistake(user: AuthUser, id: string) {
+    const rec = await this.prisma.mistakeRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Mistake not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    await this.prisma.mistakeRecord.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  async unlockMistake(user: AuthUser, id: string) {
+    if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may unlock an entry');
+    const rec = await this.prisma.mistakeRecord.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Mistake not found');
+    return this.prisma.mistakeRecord.update({
+      where: { id },
+      data: { unlockedUntil: unlockedUntilValue(), unlockedById: user.id },
     });
   }
 
   // --- Remarks ---
   async listRemarks(user: AuthUser, studentId: string) {
     await this.assertCanRead(user, studentId);
-    return this.prisma.remark.findMany({
+    const rows = await this.prisma.remark.findMany({
       where: { studentId },
       orderBy: { createdAt: 'desc' },
       include: { author: { select: { fullName: true } } },
     });
+    return rows.map((r) => ({ ...r, canEdit: isEditable(user, r) }));
   }
 
   async addRemark(user: AuthUser, studentId: string, body: string) {
@@ -236,6 +330,37 @@ export class QuranService {
     return this.prisma.remark.create({
       data: { studentId, authorId: user.id, body },
       include: { author: { select: { fullName: true } } },
+    });
+  }
+
+  async updateRemark(user: AuthUser, id: string, body: string) {
+    const rec = await this.prisma.remark.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Remark not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    return this.prisma.remark.update({
+      where: { id },
+      data: { body },
+      include: { author: { select: { fullName: true } } },
+    });
+  }
+
+  async removeRemark(user: AuthUser, id: string) {
+    const rec = await this.prisma.remark.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Remark not found');
+    await this.assertCanWrite(user, rec.studentId);
+    assertEditable(user, rec);
+    await this.prisma.remark.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  async unlockRemark(user: AuthUser, id: string) {
+    if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may unlock an entry');
+    const rec = await this.prisma.remark.findUnique({ where: { id } });
+    if (!rec) throw new NotFoundException('Remark not found');
+    return this.prisma.remark.update({
+      where: { id },
+      data: { unlockedUntil: unlockedUntilValue(), unlockedById: user.id },
     });
   }
 }
