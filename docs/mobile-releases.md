@@ -48,7 +48,10 @@ falls back to the debug key, so local `flutter run --release` still works.
 
 ### 3. Create the environment variable groups
 
-Codemagic > Environment variables. Mark every secret as **Secure**.
+Codemagic > Environment variables. Create **one** group named `juzz_release`
+and put everything below in it. Mark every secret as **Secure**. Codemagic
+fails the build if the group does not exist, so create it even while some
+variables are still blank.
 
 Group `juzz_release`:
 
@@ -58,13 +61,9 @@ Group `juzz_release`:
 | `PUBLISH_API_URL` | `https://api.juzz.sakcps.org/api` | Where the build registers the new release |
 | `PUBLISH_EMAIL` | `releases@sakcps.org` | An admin account used only by CI |
 | `PUBLISH_PASSWORD` | (secure) | That account's password |
-
-Group `juzz_github`:
-
-| Variable | Example | Purpose |
-| --- | --- | --- |
 | `GITHUB_TOKEN` | (secure) | Fine-grained token with **Contents: read and write** |
 | `GITHUB_REPO` | `mayegamustafa/juzz` | Where releases are published |
+| `GOOGLE_SERVICES_JSON` | (secure) | base64 of `google-services.json`, for push |
 
 If `GITHUB_TOKEN` or `PUBLISH_PASSWORD` is missing, the build still succeeds and
 just skips publishing, so you can fall back to the manual path below.

@@ -59,7 +59,7 @@ base64 -w0 apps/mobile/android/app/google-services.json
 ```
 
 and store the output in Codemagic as a secure variable `GOOGLE_SERVICES_JSON`
-in the `juzz_firebase` group. The build writes it back out before compiling.
+in the `juzz_release` group. The build writes it back out before compiling.
 
 The Gradle config applies the google-services plugin only when the file is
 present, so a build without it still succeeds; the app then falls back to

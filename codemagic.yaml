@@ -7,12 +7,12 @@ workflows:
       flutter: stable
       java: 17
       groups:
-        # Create these variable groups in the Codemagic UI (Settings >
-        # Environment variables). See docs/mobile-releases.md for what goes in
-        # each one. Never commit real values.
-        - juzz_release      # API_BASE_URL, PUBLISH_API_URL, PUBLISH_EMAIL, PUBLISH_PASSWORD
-        - juzz_github       # GITHUB_TOKEN, GITHUB_REPO
-        - juzz_firebase     # GOOGLE_SERVICES_JSON (base64), optional
+        # One group holds everything, so there is a single thing to create in
+        # Codemagic (Settings > Environment variables) rather than several.
+        # Codemagic fails the build outright if the group does not exist, so it
+        # must be created even while some variables inside it are still blank.
+        # See docs/mobile-releases.md for the full list.
+        - juzz_release
       android_signing:
         # Upload the keystore once under Codemagic > Code signing identities >
         # Android keystores, using this reference name. Every build must use the
