@@ -581,7 +581,12 @@ class _RecordTab extends ConsumerStatefulWidget {
 class _RecordTabState extends ConsumerState<_RecordTab> {
   late Future<List<RecordEntry>> _future = widget.load();
 
-  void _reload() => setState(() => _future = widget.load());
+  /// Runs from a `finally` after an await, so the tab may already be gone:
+  /// setState on a disposed State throws.
+  void _reload() {
+    if (!mounted) return;
+    setState(() => _future = widget.load());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -595,12 +600,15 @@ class _RecordTabState extends ConsumerState<_RecordTab> {
           final saved = await widget.onAdd(context, editing: e);
           if (saved) _reload();
         },
+        // These close over build's BuildContext, so the guard has to be
+        // context.mounted: State.mounted says the State survived, not that this
+        // particular element is still in the tree.
         onDelete: (e) async {
           try {
             await widget.onDelete(e);
-            if (mounted) showSnack(context, 'Deleted');
+            if (context.mounted) showSnack(context, 'Deleted');
           } catch (err) {
-            if (mounted) showSnack(context, '$err', error: true);
+            if (context.mounted) showSnack(context, '$err', error: true);
           } finally {
             _reload();
           }
@@ -608,9 +616,9 @@ class _RecordTabState extends ConsumerState<_RecordTab> {
         onUnlock: (e) async {
           try {
             await widget.onUnlock(e);
-            if (mounted) showSnack(context, 'Unlocked for 24 hours');
+            if (context.mounted) showSnack(context, 'Unlocked for 24 hours');
           } catch (err) {
-            if (mounted) showSnack(context, '$err', error: true);
+            if (context.mounted) showSnack(context, '$err', error: true);
           } finally {
             _reload();
           }
