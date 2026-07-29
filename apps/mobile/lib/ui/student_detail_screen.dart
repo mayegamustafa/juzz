@@ -67,7 +67,7 @@ class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen>
         if (b == null || student == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const EmptyState(icon: Icons.person_off_outlined, title: 'Student not found'),
+            body: const EmptyState(icon: Icons.person_off_outlined, title: 'Pupil not found'),
           );
         }
         _fractions ??= {...student.surahFractions};

@@ -39,7 +39,7 @@ class DashboardScreen extends ConsumerWidget {
                   return EmptyState(
                     icon: Icons.cloud_off_rounded,
                     title: 'No data yet',
-                    subtitle: 'Connect to the internet once to download your students.',
+                    subtitle: 'Connect to the internet once to download your pupils.',
                     action: OutlinedButton.icon(
                       onPressed: () => ref.invalidate(bootstrapProvider),
                       icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -82,7 +82,7 @@ class _Content extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Expanded(child: _Stat(label: 'Students', value: '${students.length}', icon: Icons.groups_rounded)),
+              Expanded(child: _Stat(label: 'Pupils', value: '${students.length}', icon: Icons.groups_rounded)),
               const SizedBox(width: 12),
               Expanded(child: _Stat(label: 'Avg. progress', value: '${avg.toStringAsFixed(1)}%', icon: Icons.trending_up_rounded)),
             ],
@@ -100,7 +100,7 @@ class _Content extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Top students', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('Top pupils', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               Text('of ${b.target} surahs',
                   style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
@@ -108,7 +108,7 @@ class _Content extends ConsumerWidget {
           const SizedBox(height: 12),
 
           if (top.isEmpty)
-            const EmptyState(icon: Icons.groups_outlined, title: 'No students assigned yet')
+            const EmptyState(icon: Icons.groups_outlined, title: 'No pupils assigned yet')
           else
             Card(
               child: Column(

@@ -93,7 +93,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.refresh_rounded),
-            title: const Text('Refresh students'),
+            title: const Text('Refresh pupils'),
             subtitle: const Text('Re-download your roster and surah list'),
             onTap: () async {
               await ref.read(repositoryProvider).bootstrap(forceRefresh: true);

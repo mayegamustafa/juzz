@@ -162,7 +162,7 @@ export default function TrackingPage() {
       {loading ? (
         <Spinner label="Loading grid…" />
       ) : rows.length === 0 ? (
-        <Empty>No students in this class yet.</Empty>
+        <Empty>No pupils in this class yet.</Empty>
       ) : (
         <div className="card overflow-auto">
           <table className="border-collapse text-sm">

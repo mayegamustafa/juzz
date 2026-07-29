@@ -40,7 +40,7 @@ export default function ReportsPage() {
     <div>
       <PageHeader
         title="Reports: GENERAL roll-up"
-        subtitle="Students per surah, per school (auto-generated, replaces the manual GENERAL tab)"
+        subtitle="Pupils per surah, per school (auto-generated, replaces the manual GENERAL tab)"
         action={
           <div className="flex gap-2">
             <button className="btn-outline" onClick={() => exportAs('xlsx')} disabled={!data || !!exporting}>

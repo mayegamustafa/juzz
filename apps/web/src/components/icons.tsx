@@ -233,6 +233,21 @@ export const Filter = (p: IconProps) => (
   </svg>
 );
 
+export const Send = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M22 2 11 13" />
+    <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
+  </svg>
+);
+
+export const Megaphone = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z" />
+    <path d="M14 8a4 4 0 0 1 0 8" />
+    <path d="M17.5 5a8 8 0 0 1 0 14" />
+  </svg>
+);
+
 export const Shield = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />

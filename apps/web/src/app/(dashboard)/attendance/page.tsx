@@ -111,7 +111,7 @@ export default function AttendancePage() {
       {loading ? (
         <Spinner />
       ) : rows.length === 0 ? (
-        <Empty>No students in this class.</Empty>
+        <Empty>No pupils in this class.</Empty>
       ) : (
         <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
           {rows.map((r) => (

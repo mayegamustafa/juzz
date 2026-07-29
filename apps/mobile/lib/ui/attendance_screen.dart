@@ -82,7 +82,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   return const EmptyState(
                     icon: Icons.class_outlined,
                     title: 'No classes',
-                    subtitle: 'Classes with assigned students appear here.',
+                    subtitle: 'Classes with assigned pupils appear here.',
                   );
                 }
 
@@ -124,7 +124,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     }
     final rows = _rows ?? const <AttendanceRow>[];
     if (rows.isEmpty) {
-      return const EmptyState(icon: Icons.groups_outlined, title: 'No students in this class');
+      return const EmptyState(icon: Icons.groups_outlined, title: 'No pupils in this class');
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

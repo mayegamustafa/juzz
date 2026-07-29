@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <PageHeader title={`Welcome, ${user?.fullName?.split(' ')[0] ?? ''}`} subtitle="Quran memorization overview" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Active Students" value={kpis.studentCount} />
+        <StatCard label="Active pupils" value={kpis.studentCount} />
         <StatCard label="Surahs Memorized" value={kpis.memorizationCount} hint="total records" />
         <StatCard label="Avg. Progress" value={`${kpis.avgPercent}%`} hint={`of ${kpis.target} surahs (2 Juzu)`} />
         <StatCard label="Shks & Shkts" value={kpis.teacherCount} />

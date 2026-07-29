@@ -97,7 +97,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
-                    Text('Sign in to record your students\' progress',
+                    Text('Sign in to record your pupils\' progress',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13.5)),
                     const SizedBox(height: 32),

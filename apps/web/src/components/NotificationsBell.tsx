@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Bell } from '@/components/icons';
@@ -40,10 +41,6 @@ export function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
   const [items, setItems] = useState<Notification[]>([]);
-  const [composing, setComposing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [sending, setSending] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const refreshCount = useCallback(() => {
@@ -88,21 +85,6 @@ export function NotificationsBell() {
     setCount((c) => Math.max(0, c - 1));
   };
 
-  const send = async () => {
-    if (!title.trim() || !body.trim()) return;
-    setSending(true);
-    try {
-      await api.post('/notifications/broadcast', { title: title.trim(), body: body.trim(), type: 'ANNOUNCEMENT' });
-      setTitle('');
-      setBody('');
-      setComposing(false);
-      const list = await api.get<Notification[]>('/notifications?limit=20');
-      setItems(list);
-      refreshCount();
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <div className="relative" ref={ref}>
@@ -123,10 +105,16 @@ export function NotificationsBell() {
           <div className="flex items-center justify-between border-b px-4 py-2.5" style={{ borderColor: 'var(--border)' }}>
             <span className="text-sm font-semibold">Notifications</span>
             <div className="flex gap-2">
+              {/* Composing lives on its own page rather than in here: buried in a
+                  dropdown behind an unlabelled bell, nobody found it. */}
               {canBroadcast(user?.role) && (
-                <button className="text-xs font-medium text-emerald-600 hover:underline" onClick={() => setComposing((v) => !v)}>
-                  {composing ? 'Cancel' : 'New announcement'}
-                </button>
+                <Link
+                  href="/announcements"
+                  className="text-xs font-medium text-emerald-600 hover:underline"
+                  onClick={() => setOpen(false)}
+                >
+                  Send announcement
+                </Link>
               )}
               {count > 0 && (
                 <button className="text-xs hover:underline" style={{ color: 'var(--muted)' }} onClick={markAll}>
@@ -135,22 +123,6 @@ export function NotificationsBell() {
               )}
             </div>
           </div>
-
-          {composing && (
-            <div className="space-y-2 border-b p-3" style={{ borderColor: 'var(--border)' }}>
-              <input className="input" placeholder="Title" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
-              <textarea
-                className="input min-h-20"
-                placeholder="Message to everyone in your scope…"
-                value={body}
-                maxLength={2000}
-                onChange={(e) => setBody(e.target.value)}
-              />
-              <button className="btn-primary w-full" onClick={send} disabled={sending || !title.trim() || !body.trim()}>
-                {sending ? 'Sending…' : 'Send announcement'}
-              </button>
-            </div>
-          )}
 
           <div className="max-h-96 overflow-y-auto">
             {items.length === 0 ? (
