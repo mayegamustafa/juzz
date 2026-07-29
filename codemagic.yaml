@@ -1,7 +1,9 @@
 workflows:
   android-teacher-app:
     name: Juzz Tracking - Android
-    instance_type: linux_x2
+    # instance_type is deliberately unset: pinning one (linux_x2, mac_mini_m2)
+    # fails outright on plans that do not include it. Codemagic then picks a
+    # machine the current plan allows. Pin it only if a build is too slow.
     max_build_duration: 60
     environment:
       flutter: stable
@@ -150,7 +152,7 @@ workflows:
 
   ios-teacher-app:
     name: Juzz Tracking - iOS
-    instance_type: mac_mini_m2
+    # Must run on macOS, but leave the exact machine to the plan (see above).
     max_build_duration: 60
     environment:
       flutter: stable
