@@ -124,7 +124,7 @@ export function SchoolClasses({
       <Modal
         open
         onClose={onClose}
-        title={`Classes — ${school.name}`}
+        title={`Classes: ${school.name}`}
         description="Classes and their streams. A class holding pupils cannot be removed."
         width="max-w-2xl"
         footer={

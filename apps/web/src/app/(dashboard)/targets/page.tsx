@@ -529,7 +529,7 @@ export default function TargetsPage() {
                 >
                   {schools.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.code} — {s.name}
+                      {s.code} · {s.name}
                     </option>
                   ))}
                 </select>

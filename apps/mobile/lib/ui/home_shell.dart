@@ -70,7 +70,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
               ],
               const SizedBox(height: 8),
               Text(
-                'Installing keeps your data and login — no need to uninstall first.',
+                'Installing keeps your data and login. No need to uninstall first.',
                 style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
               ),
             ],

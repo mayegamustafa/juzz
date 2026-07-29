@@ -196,7 +196,7 @@ export default function SchoolsPage() {
 
               <h3 className="mt-2 font-semibold">{s.name}</h3>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {s.location ?? '—'}
+                {s.location ?? 'N/A'}
               </p>
 
               <div className="mt-3 flex gap-4 text-sm">
@@ -281,7 +281,7 @@ export default function SchoolsPage() {
         message={
           <>
             This permanently removes the school. Schools that still hold pupils or sheikhs cannot be
-            deleted — archive them instead.
+            deleted; archive them instead.
           </>
         }
       />

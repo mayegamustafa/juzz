@@ -127,7 +127,7 @@ export default function StudentDetailPage() {
       </Link>
       <PageHeader
         title={s.fullName}
-        subtitle={`${s.schoolClass.level} · ${s.school.name} · Sheikh: ${s.primaryTeacher?.fullName ?? '—'}`}
+        subtitle={`${s.schoolClass.level} · ${s.school.name} · Sheikh: ${s.primaryTeacher?.fullName ?? 'N/A'}`}
         action={
           <div className="flex gap-2">
             <button className="btn-outline" onClick={() => exportAs('pdf')} disabled={!!exporting}>
@@ -146,9 +146,9 @@ export default function StudentDetailPage() {
           <h2 className="mb-3 font-semibold">Profile</h2>
           <dl className="space-y-2 text-sm">
             <Field label="Admission No." value={s.admissionNo} />
-            <Field label="Gender" value={s.gender ?? '—'} />
-            <Field label="Guardian" value={s.guardianName ?? '—'} />
-            <Field label="Guardian Phone" value={s.guardianPhone ?? '—'} />
+            <Field label="Gender" value={s.gender ?? 'N/A'} />
+            <Field label="Guardian" value={s.guardianName ?? 'N/A'} />
+            <Field label="Guardian Phone" value={s.guardianPhone ?? 'N/A'} />
           </dl>
         </div>
 

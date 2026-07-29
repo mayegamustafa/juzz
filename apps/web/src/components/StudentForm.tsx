@@ -217,7 +217,7 @@ export function StudentForm({
                 >
                   {schools.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.code} — {s.name}
+                      {s.code} · {s.name}
                     </option>
                   ))}
                 </select>
@@ -301,7 +301,7 @@ export function StudentForm({
           <div>
             <label className="label">Gender</label>
             <select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-              <option value="">—</option>
+              <option value="">Unspecified</option>
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
             </select>

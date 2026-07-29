@@ -145,7 +145,7 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                 initialValue: _gender,
                 decoration: const InputDecoration(labelText: 'Gender (optional)'),
                 items: const [
-                  DropdownMenuItem<String?>(value: null, child: Text('—')),
+                  DropdownMenuItem<String?>(value: null, child: Text('N/A')),
                   DropdownMenuItem(value: 'MALE', child: Text('Male')),
                   DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
                 ],

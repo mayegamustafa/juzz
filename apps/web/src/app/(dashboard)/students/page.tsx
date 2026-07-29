@@ -287,7 +287,7 @@ export default function StudentsPage() {
                       {s.schoolClass.level}
                       {s.stream && <span style={{ color: 'var(--muted)' }}> · {s.stream.name}</span>}
                     </td>
-                    <td className="px-4 py-2.5">{s.primaryTeacher?.fullName ?? '—'}</td>
+                    <td className="px-4 py-2.5">{s.primaryTeacher?.fullName ?? 'N/A'}</td>
                     {enrollmentStatus === 'APPROVED' ? (
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ export default function StudentsPage() {
                       </td>
                     ) : (
                       <td className="px-4 py-2.5 text-xs" style={{ color: 'var(--muted)' }}>
-                        {enrollmentStatus === 'REJECTED' ? s.rejectionReason ?? '—' : ENROLLMENT_LABEL[s.enrollmentStatus]}
+                        {enrollmentStatus === 'REJECTED' ? s.rejectionReason ?? 'N/A' : ENROLLMENT_LABEL[s.enrollmentStatus]}
                       </td>
                     )}
                     {canEditPupil && (
@@ -378,7 +378,7 @@ export default function StudentsPage() {
         onConfirm={doDelete}
         busy={busy}
         title={`Delete ${deleting?.fullName}?`}
-        message="A pupil with any Quran history cannot be deleted — that would erase their record. Archive them instead."
+        message="A pupil with any Quran history cannot be deleted, since that would erase their record. Archive them instead."
       />
 
       <Modal

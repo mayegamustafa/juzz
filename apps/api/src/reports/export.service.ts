@@ -123,7 +123,7 @@ export class ExportService {
 
     const schoolName = data.schools.length === 1 ? data.schools[0].name : undefined;
     const logoIds = this.embedLogos(wb);
-    this.xlsxHeader(ws, logoIds, `GENERAL roll-up — ${level}`, 'Pupils who have memorized each surah, per school', schoolName);
+    this.xlsxHeader(ws, logoIds, `GENERAL roll-up: ${level}`, 'Pupils who have memorized each surah, per school', schoolName);
 
     const header = ['Surah', ...data.schools.map((s) => s.code), 'TOTAL'];
     const headerRow = ws.addRow(header);
@@ -164,7 +164,7 @@ export class ExportService {
     this.xlsxHeader(
       info,
       logoIds,
-      `Pupil Report — ${rep.student.fullName}`,
+      `Pupil Report: ${rep.student.fullName}`,
       `${rep.student.school} · ${rep.student.level}`,
       rep.student.school,
     );
@@ -173,15 +173,15 @@ export class ExportService {
       ['Admission No', rep.student.admissionNo],
       ['School', `${rep.student.school} (${rep.student.schoolCode})`],
       ['Class', `${rep.student.className} · ${rep.student.level}`],
-      ['Stream', rep.student.stream ?? '—'],
-      ['Sheikh', rep.student.teacher ?? '—'],
-      ['Guardian', `${rep.student.guardianName ?? '—'} ${rep.student.guardianPhone ?? ''}`.trim()],
+      ['Stream', rep.student.stream ?? 'N/A'],
+      ['Sheikh', rep.student.teacher ?? 'N/A'],
+      ['Guardian', `${rep.student.guardianName ?? 'N/A'} ${rep.student.guardianPhone ?? ''}`.trim()],
       ['Status', rep.student.status],
       ['', ''],
       ['Surahs memorized', `${rep.summary.memorized} / ${rep.summary.target} (${rep.summary.percent}%)`],
       ['Revisions', rep.summary.revisions],
       ['Assessments', rep.summary.assessments],
-      ['Average score', rep.summary.avgScore ?? '—'],
+      ['Average score', rep.summary.avgScore ?? 'N/A'],
       ['Total mistakes', rep.summary.mistakes],
     ];
     for (const [k, v] of pairs) {
@@ -193,7 +193,7 @@ export class ExportService {
 
     const sheet = (name: string, headers: string[], rows: (string | number)[][], widths: number[]) => {
       const ws = wb.addWorksheet(name);
-      this.xlsxHeader(ws, logoIds, `${name} — ${rep.student.fullName}`, undefined, rep.student.school);
+      this.xlsxHeader(ws, logoIds, `${name}: ${rep.student.fullName}`, undefined, rep.student.school);
       const hr = ws.addRow(headers);
       this.styleHeaderRow(ws, hr.number, headers.length);
       rows.forEach((r) => ws.addRow(r));
@@ -431,7 +431,7 @@ export class ExportService {
 
     return this.renderPdf(
       (doc) => {
-        doc.font('Helvetica-Bold').fontSize(13).fillColor(INK).text(`GENERAL roll-up — ${level}`);
+        doc.font('Helvetica-Bold').fontSize(13).fillColor(INK).text(`GENERAL roll-up: ${level}`);
         doc
           .font('Helvetica')
           .fontSize(8.5)
@@ -501,13 +501,13 @@ export class ExportService {
       doc.moveDown(0.4);
       const att = Object.entries(s.attendance)
         .map(([k, v]) => `${k[0]}${k.slice(1).toLowerCase()} ${v}`)
-        .join('   ') || '—';
+        .join('   ') || 'N/A';
       doc.font('Helvetica').fontSize(9).fillColor(INK);
       [
-        `Revisions: ${s.revisions}     Assessments: ${s.assessments}     Average score: ${s.avgScore ?? '—'}`,
+        `Revisions: ${s.revisions}     Assessments: ${s.assessments}     Average score: ${s.avgScore ?? 'N/A'}`,
         `Total mistakes: ${s.mistakes}`,
         `Attendance: ${att}`,
-        `Sheikh: ${rep.student.teacher ?? '—'}     Guardian: ${rep.student.guardianName ?? '—'} ${rep.student.guardianPhone ?? ''}`,
+        `Sheikh: ${rep.student.teacher ?? 'N/A'}     Guardian: ${rep.student.guardianName ?? 'N/A'} ${rep.student.guardianPhone ?? ''}`,
       ].forEach((l) => doc.text(l));
 
       this.sectionTitle(doc, `Memorization (${rep.memorizations.length})`);
@@ -516,7 +516,7 @@ export class ExportService {
           doc,
           ['Surah', 'Juz', 'From', 'To', 'Date'],
           [usable - 260, 50, 60, 60, 90],
-          rep.memorizations.map((m) => [m.surah, m.juz, m.ayahFrom ?? '—', m.ayahTo ?? '—', fmtDate(m.date)]),
+          rep.memorizations.map((m) => [m.surah, m.juz, m.ayahFrom ?? 'N/A', m.ayahTo ?? 'N/A', fmtDate(m.date)]),
         );
       } else doc.font('Helvetica').fontSize(9).fillColor(GREY).text('No records.');
 
@@ -526,7 +526,7 @@ export class ExportService {
           doc,
           ['Surah / Juz', 'Score', 'Date'],
           [usable - 190, 80, 110],
-          rep.revisions.map((r) => [r.surah, r.score ?? '—', fmtDate(r.date)]),
+          rep.revisions.map((r) => [r.surah, r.score ?? 'N/A', fmtDate(r.date)]),
         );
       } else doc.font('Helvetica').fontSize(9).fillColor(GREY).text('No records.');
 
@@ -536,7 +536,7 @@ export class ExportService {
           doc,
           ['Grade', 'Score', 'Date'],
           [usable - 190, 80, 110],
-          rep.assessments.map((a) => [(a.grade ?? '—').replace('_', ' '), a.score ?? '—', fmtDate(a.date)]),
+          rep.assessments.map((a) => [(a.grade ?? 'N/A').replace('_', ' '), a.score ?? 'N/A', fmtDate(a.date)]),
         );
       } else doc.font('Helvetica').fontSize(9).fillColor(GREY).text('No records.');
 

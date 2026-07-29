@@ -191,7 +191,7 @@ export default function TeachersPage() {
           <option value="">All schools</option>
           {schools.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.code} — {s.name}
+              {s.code} · {s.name}
             </option>
           ))}
         </select>
@@ -225,7 +225,7 @@ export default function TeachersPage() {
                   <td className="px-4 py-2.5 text-xs" style={{ color: 'var(--muted)' }}>
                     {t.user?.email ?? 'no login'}
                   </td>
-                  <td className="px-4 py-2.5">{t.phone ?? '—'}</td>
+                  <td className="px-4 py-2.5">{t.phone ?? 'N/A'}</td>
                   <td className="px-4 py-2.5 text-center font-medium">{t._count.primaryStudents}</td>
                   <td className="px-4 py-2.5">
                     <button
@@ -293,7 +293,7 @@ export default function TeachersPage() {
             <select className="input" value={form.schoolId} onChange={(e) => setForm({ ...form, schoolId: e.target.value })}>
               {schools.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
+                  {s.code} · {s.name}
                 </option>
               ))}
             </select>
@@ -339,7 +339,7 @@ export default function TeachersPage() {
           setResetting(null);
           setNewPassword('');
         }}
-        title={`Reset password — ${resetting?.fullName}`}
+        title={`Reset password for ${resetting?.fullName}`}
         description="They will be signed out of every device."
         width="max-w-sm"
         footer={
@@ -376,7 +376,7 @@ export default function TeachersPage() {
         onConfirm={doDelete}
         busy={busy}
         title={`Delete ${deleting?.fullName}?`}
-        message="This also removes their login. A sheikh who still has pupils cannot be deleted — reassign the pupils first, or deactivate instead."
+        message="This also removes their login. A sheikh who still has pupils cannot be deleted; reassign the pupils first, or deactivate instead."
       />
     </div>
   );

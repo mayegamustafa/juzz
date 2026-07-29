@@ -17,6 +17,7 @@ import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SyncModule } from './sync/sync.module';
 import { AppReleaseModule } from './app-release/app-release.module';
+import { SetupModule } from './setup/setup.module';
 
 import { JwtAuthGuard, RolesGuard } from './common/guards';
 import { AuditInterceptor } from './common/audit.interceptor';
@@ -41,6 +42,7 @@ import { HealthController } from './health.controller';
     NotificationsModule,
     SyncModule,
     AppReleaseModule,
+    SetupModule,
   ],
   controllers: [HealthController],
   providers: [

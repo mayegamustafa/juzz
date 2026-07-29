@@ -118,8 +118,8 @@ export default function AttendancePage() {
             <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3" style={{ borderColor: 'var(--border)' }}>
               <span className={`font-medium ${saving === r.id ? 'opacity-50' : ''}`}>{r.fullName}</span>
               {!r.canEdit ? (
-                <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }} title="Locked after 24h — ask the manager to unlock it">
-                  <Lock size={12} /> {r.status ? r.status[0] + r.status.slice(1).toLowerCase() : '—'} · locked
+                <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }} title="Locked after 24h. Ask the manager to unlock it.">
+                  <Lock size={12} /> {r.status ? r.status[0] + r.status.slice(1).toLowerCase() : 'N/A'} · locked
                 </span>
               ) : (
                 <div className="flex gap-1">

@@ -39,7 +39,7 @@ export default function ReportsPage() {
   return (
     <div>
       <PageHeader
-        title="Reports — GENERAL roll-up"
+        title="Reports: GENERAL roll-up"
         subtitle="Students per surah, per school (auto-generated, replaces the manual GENERAL tab)"
         action={
           <div className="flex gap-2">

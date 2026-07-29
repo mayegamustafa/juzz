@@ -213,7 +213,7 @@ export default function TrackingPage() {
                     const v = r.cells[s.id] ?? 0;
                     const key = `${r.id}:${s.id}`;
                     const title = `${s.number}. ${s.nameTransliteration}${
-                      v > 0 ? ` — ${Math.round(v * 100)}%` : ''
+                      v > 0 ? ` (${Math.round(v * 100)}%)` : ''
                     }`;
                     return (
                       <td

@@ -64,7 +64,7 @@ export default function MobileAppPage() {
         mandatory: form.mandatory,
       });
       setRelease(saved);
-      toast.success('Release published — every Sheikh will be offered this update next time they open the app');
+      toast.success('Release published. Every Sheikh will be offered this update next time they open the app.');
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -78,7 +78,7 @@ export default function MobileAppPage() {
     <div>
       <PageHeader
         title="Teacher app updates"
-        subtitle="Publish a new build after every Codemagic run — Sheikhs are offered it next time they open the app"
+        subtitle="Publish a new build after every Codemagic run, and Sheikhs are offered it next time they open the app"
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -134,7 +134,7 @@ export default function MobileAppPage() {
                 checked={form.mandatory}
                 onChange={(e) => setForm({ ...form, mandatory: e.target.checked })}
               />
-              Mandatory — Sheikhs must update before continuing
+              Mandatory: Sheikhs must update before continuing
             </label>
             <button
               className="btn-primary w-full"
@@ -150,7 +150,7 @@ export default function MobileAppPage() {
           <h2 className="mb-4 font-semibold">Currently published</h2>
           {!release ? (
             <p className="text-sm" style={{ color: 'var(--muted)' }}>
-              No release published yet — every installed app is treated as current.
+              No release published yet, so every installed app is treated as current.
             </p>
           ) : (
             <dl className="space-y-2 text-sm">
@@ -180,7 +180,7 @@ export default function MobileAppPage() {
           )}
           <div className="mt-4 rounded-lg border p-3 text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
             Sheikhs get a prompt (or a required update if marked mandatory) the next time they open
-            the app. Installing the new APK over the old one keeps their data and login — no
+            the app. Installing the new APK over the old one keeps their data and login, with no
             uninstall needed, since it's signed with the same key.
           </div>
         </div>

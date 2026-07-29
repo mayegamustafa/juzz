@@ -6,7 +6,7 @@ export const ORG_NAME = "Sir Apollo Kaggwa Schools & City Parents' School";
 
 // The organisation's letterhead — used verbatim on the login screen and at the
 // top of every printed report, matching the paper documents Sheikhs already know.
-export const LETTERHEAD_TITLE = 'Sir Apollo Kaggwa Schools – Since 1996';
+export const LETTERHEAD_TITLE = 'Sir Apollo Kaggwa Schools - Since 1996';
 export const LETTERHEAD_MOTTO = '"Where your child is guaranteed a first grade"';
 export const LETTERHEAD_DEPARTMENT = 'Theology Department';
 

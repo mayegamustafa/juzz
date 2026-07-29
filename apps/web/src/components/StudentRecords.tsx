@@ -86,7 +86,7 @@ export function RecordActions({
 }) {
   if (!canEdit && !canManage) {
     return (
-      <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--muted)' }} title="Locked after 24h — ask the manager to unlock it">
+      <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--muted)' }} title="Locked after 24h. Ask the manager to unlock it.">
         <Lock size={11} /> locked
       </span>
     );
@@ -342,7 +342,7 @@ function Assessment({ studentId, editable }: { studentId: string; editable: bool
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{a.grade ? a.grade.replace('_', ' ') : '—'}</span>
+                  <span className="font-medium">{a.grade ? a.grade.replace('_', ' ') : 'N/A'}</span>
                   <div className="flex items-center gap-3">
                     <span style={{ color: 'var(--muted)' }}>
                       {a.score != null ? `${a.score}/100 · ` : ''}

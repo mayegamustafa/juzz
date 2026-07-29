@@ -211,7 +211,7 @@ class Repository {
         final score = j['score'];
         return RecordEntry(
           id: j['id'] as String,
-          label: '${j['grade'] ?? '—'}'.replaceAll('_', ' '),
+          label: '${j['grade'] ?? 'N/A'}'.replaceAll('_', ' '),
           detail: score == null ? null : '$score/100',
           date: DateTime.tryParse('${j['assessedAt']}') ?? DateTime.now(),
           canEdit: j['canEdit'] as bool? ?? false,

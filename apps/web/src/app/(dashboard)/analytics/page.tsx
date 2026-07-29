@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
             <option value="">All schools</option>
             {schools.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.code} — {s.name}
+                {s.code} · {s.name}
               </option>
             ))}
           </select>
@@ -161,7 +161,7 @@ export default function AnalyticsPage() {
             </div>
           )}
           <div className="mt-4 flex justify-between border-t pt-3 text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-            <span>Avg. assessment: <b>{kpis.avgScore ?? '—'}</b></span>
+            <span>Avg. assessment: <b>{kpis.avgScore ?? 'N/A'}</b></span>
             <span>Revisions: <b>{kpis.totalRevisions}</b></span>
             <span>Mistakes: <b>{kpis.totalMistakes}</b></span>
           </div>
@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
                       </p>
                     </td>
                     <td className="px-4 py-2">{s.level}</td>
-                    <td className="px-4 py-2">{s.sheikh ?? '—'}</td>
+                    <td className="px-4 py-2">{s.sheikh ?? 'N/A'}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <div className="min-w-16 flex-1">
@@ -278,7 +278,7 @@ export default function AnalyticsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-center">{s.mistakes || '—'}</td>
+                    <td className="px-4 py-2 text-center">{s.mistakes || 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>

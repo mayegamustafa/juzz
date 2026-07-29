@@ -141,7 +141,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                 if (!r.canEdit) ...[
                   const SizedBox(width: 8),
                   Tooltip(
-                    message: 'Locked after 24h — ask the manager to unlock it',
+                    message: 'Locked after 24h. Ask the manager to unlock it.',
                     child: Icon(Icons.lock_outline_rounded, size: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],

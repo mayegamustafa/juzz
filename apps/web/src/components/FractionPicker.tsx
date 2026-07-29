@@ -6,9 +6,9 @@ import { Check } from '@/components/icons';
 
 const PRESETS = [
   { value: 0, label: 'Not started' },
-  { value: 0.25, label: '¼ — just begun' },
-  { value: 0.5, label: '½ — halfway' },
-  { value: 0.75, label: '¾ — nearly done' },
+  { value: 0.25, label: '¼ (just begun)' },
+  { value: 0.5, label: '½ (halfway)' },
+  { value: 0.75, label: '¾ (nearly done)' },
   { value: 1, label: 'Memorized' },
 ] as const;
 

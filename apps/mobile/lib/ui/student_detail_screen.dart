@@ -14,9 +14,9 @@ const _mistakeTypes = ['TAJWEED', 'MEMORIZATION', 'PRONUNCIATION'];
 /// options so a Sheikh sees the same scale on both.
 const _fractionPresets = [
   (value: 0.0, label: 'Not started'),
-  (value: 0.25, label: '¼ — just begun'),
-  (value: 0.5, label: '½ — halfway'),
-  (value: 0.75, label: '¾ — nearly done'),
+  (value: 0.25, label: '¼ (just begun)'),
+  (value: 0.5, label: '½ (halfway)'),
+  (value: 0.75, label: '¾ (nearly done)'),
   (value: 1.0, label: 'Memorized'),
 ];
 
@@ -429,7 +429,7 @@ class _RecordActions extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!canEdit && !canManage) {
       return Tooltip(
-        message: 'Locked after 24h — ask the manager to unlock it',
+        message: 'Locked after 24h. Ask the manager to unlock it.',
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -980,7 +980,7 @@ class _SurahPicker extends StatelessWidget {
       isExpanded: true,
       decoration: const InputDecoration(labelText: 'Surah (optional)', isDense: true),
       items: [
-        const DropdownMenuItem<Surah?>(value: null, child: Text('— None —')),
+        const DropdownMenuItem<Surah?>(value: null, child: Text('None')),
         for (final s in surahs)
           DropdownMenuItem<Surah?>(value: s, child: Text('${s.number}. ${s.name}')),
       ],

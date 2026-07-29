@@ -303,7 +303,7 @@ export class StudentsService {
     const records = memorizations + revisions + assessments + attendance;
     if (records > 0) {
       throw new ConflictException(
-        `This pupil has ${records} progress record${records === 1 ? '' : 's'}. Deleting would erase their Quran history — archive them instead.`,
+        `This pupil has ${records} progress record${records === 1 ? '' : 's'}. Deleting would erase their Quran history; archive them instead.`,
       );
     }
 

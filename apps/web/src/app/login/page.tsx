@@ -3,19 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/lib/theme';
 import { BrandLogos, LETTERHEAD_TITLE, LETTERHEAD_MOTTO, LETTERHEAD_DEPARTMENT } from '@/components/Brand';
-
-const DEMO = [
-  ['Super Admin', 'superadmin@qpms.test'],
-  ['Manager / EMT', 'manager@qpms.test'],
-  ['Sheikh (Teacher)', 'nyombi@qpms.test'],
-];
+import { Sun, Moon } from '@/components/icons';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('superadmin@qpms.test');
-  const [password, setPassword] = useState('Password123!');
+  const { dark, toggle } = useTheme();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -34,7 +31,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
+    <div className="relative flex min-h-screen items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
+      <button
+        className="btn-ghost absolute right-4 top-4 px-2"
+        onClick={toggle}
+        title="Toggle theme"
+        aria-label="Toggle theme"
+      >
+        {dark ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
       <div className="w-full max-w-md">
         {/* Letterhead */}
         <div className="mb-5 text-center">
@@ -54,7 +59,7 @@ export default function LoginPage() {
 
         <div className="card p-8" style={{ borderTop: '3px solid #047857' }}>
           <p className="mb-5 text-center text-sm font-medium" style={{ color: 'var(--muted)' }}>
-            Juzz Tracking System — sign in
+            Sign in to the Juzz Tracking System
           </p>
 
           <form onSubmit={submit} className="space-y-4">
@@ -77,25 +82,6 @@ export default function LoginPage() {
               {busy ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
-
-          <div className="mt-6 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-            <p className="mb-2 text-xs font-medium" style={{ color: 'var(--muted)' }}>
-              Demo accounts (password: Password123!)
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO.map(([label, mail]) => (
-                <button
-                  key={mail}
-                  type="button"
-                  onClick={() => setEmail(mail)}
-                  className="rounded-md border px-2 py-1.5 text-left text-xs hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <p className="mt-4 text-center text-[11px]" style={{ color: 'var(--muted)' }}>

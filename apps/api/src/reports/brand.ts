@@ -7,7 +7,7 @@ export const ORG_NAME = "Sir Apollo Kaggwa Schools & City Parents' School";
 // The organisation's letterhead, used verbatim at the top of every printed
 // report and PDF. Line 4 is filled in per-document with the specific school
 // (a pupil's own school, or "All Schools" for an organisation-wide report).
-export const LETTERHEAD_TITLE = 'SIR APOLLO KAGGWA SCHOOLS – SINCE 1996';
+export const LETTERHEAD_TITLE = 'SIR APOLLO KAGGWA SCHOOLS - SINCE 1996';
 export const LETTERHEAD_MOTTO = '"Where your child is guaranteed a first grade"';
 export const LETTERHEAD_DEPARTMENT = 'THEOLOGY DEPARTMENT';
 
@@ -57,7 +57,7 @@ export function logosSmall(): { sak: Buffer | null; cps: Buffer | null } {
 }
 
 export function fmtDate(d: Date | string | null | undefined): string {
-  if (!d) return '—';
+  if (!d) return 'N/A';
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
