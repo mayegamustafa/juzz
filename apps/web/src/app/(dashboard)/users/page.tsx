@@ -135,7 +135,7 @@ export default function UsersPage() {
     <div>
       <PageHeader
         title="Staff accounts"
-        subtitle="Managers and system owners. Sheikh logins are created on the Sheikhs page."
+        subtitle="Managers and system owners. Shk and Shkt logins are created on their own page."
         action={
           <button className="btn-primary" onClick={openCreate}>
             <Plus size={16} /> Add account
@@ -244,9 +244,9 @@ export default function UsersPage() {
 
       <p className="mt-3 text-xs" style={{ color: 'var(--muted)' }}>
         Managers can do everything in the system except publish a mobile app release or grant super
-        admin, which stay with the super admin. Sheikh accounts are created on the{' '}
+        admin, which stay with the super admin. Shk and Shkt accounts are created on the{' '}
         <Link href="/teachers" className="text-emerald-600 hover:underline">
-          Sheikhs
+          Shks &amp; Shkts
         </Link>{' '}
         page so their teaching record is created alongside the login.
       </p>

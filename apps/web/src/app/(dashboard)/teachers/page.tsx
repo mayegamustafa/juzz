@@ -164,12 +164,12 @@ export default function TeachersPage() {
   return (
     <div>
       <PageHeader
-        title="Sheikhs"
-        subtitle={`${teachers.length} sheikh${teachers.length === 1 ? '' : 's'} across the organisation`}
+        title="Sheikhs & Sheikhats"
+        subtitle={`${teachers.length} across the organisation`}
         action={
           canManage && (
             <button className="btn-primary" onClick={openCreate} disabled={schools.length === 0}>
-              <Plus size={16} /> Add sheikh
+              <Plus size={16} /> Add Shk / Shkt
             </button>
           )
         }
@@ -198,7 +198,7 @@ export default function TeachersPage() {
       </div>
 
       {visible.length === 0 ? (
-        <Empty>{query || schoolFilter ? 'No sheikhs match your filters.' : 'No sheikhs yet.'}</Empty>
+        <Empty>{query || schoolFilter ? 'No Shks or Shkts match your filters.' : 'No Shks or Shkts yet.'}</Empty>
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
@@ -270,15 +270,15 @@ export default function TeachersPage() {
       <Modal
         open={creating || !!editing}
         onClose={closeForm}
-        title={editing ? `Edit ${editing.fullName}` : 'Add sheikh'}
-        description={editing ? 'Changing the school transfers this sheikh.' : undefined}
+        title={editing ? `Edit ${editing.fullName}` : 'Add Shk / Shkt'}
+        description={editing ? 'Changing the school transfers them.' : undefined}
         footer={
           <>
             <button className="btn-outline" onClick={closeForm} disabled={saving}>
               Cancel
             </button>
             <button className="btn-primary" onClick={save} disabled={saving || !canSubmit}>
-              {saving ? 'Saving…' : editing ? 'Save changes' : 'Add sheikh'}
+              {saving ? 'Saving…' : editing ? 'Save changes' : 'Add Shk / Shkt'}
             </button>
           </>
         }
@@ -306,7 +306,7 @@ export default function TeachersPage() {
           {!editing && (
             <div className="rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
               <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>
-                Optional: create a login so this sheikh can use the mobile app. Leave blank to add a
+                Optional: create a login so they can use the mobile app. Leave blank to add a
                 record only.
               </p>
               <div className="space-y-2">
@@ -376,7 +376,7 @@ export default function TeachersPage() {
         onConfirm={doDelete}
         busy={busy}
         title={`Delete ${deleting?.fullName}?`}
-        message="This also removes their login. A sheikh who still has pupils cannot be deleted; reassign the pupils first, or deactivate instead."
+        message="This also removes their login. A Shk or Shkt who still has pupils cannot be deleted; reassign the pupils first, or deactivate instead."
       />
     </div>
   );

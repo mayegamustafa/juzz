@@ -57,7 +57,7 @@ export default function DashboardPage() {
         <StatCard label="Active Students" value={kpis.studentCount} />
         <StatCard label="Surahs Memorized" value={kpis.memorizationCount} hint="total records" />
         <StatCard label="Avg. Progress" value={`${kpis.avgPercent}%`} hint={`of ${kpis.target} surahs (2 Juzu)`} />
-        <StatCard label="Teachers" value={kpis.teacherCount} />
+        <StatCard label="Shks & Shkts" value={kpis.teacherCount} />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">

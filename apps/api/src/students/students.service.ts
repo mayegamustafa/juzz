@@ -128,8 +128,8 @@ export class StudentsService {
     }
     if (data.primaryTeacherId) {
       const teacher = await this.prisma.teacher.findUnique({ where: { id: data.primaryTeacherId } });
-      if (!teacher) throw new NotFoundException('Sheikh not found');
-      if (teacher.schoolId !== schoolId) throw new BadRequestException('That sheikh teaches at another school');
+      if (!teacher) throw new NotFoundException('Shk / Shkt not found');
+      if (teacher.schoolId !== schoolId) throw new BadRequestException('They teach at another school');
     }
   }
 
@@ -157,7 +157,7 @@ export class StudentsService {
     let ownTeacherId: string | null = null;
     if (selfRegistering) {
       const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
-      if (!teacher) throw new ForbiddenException('Only a registered sheikh may add pupils');
+      if (!teacher) throw new ForbiddenException('Only a registered Shk or Shkt may add pupils');
       ownTeacherId = teacher.id;
     }
 

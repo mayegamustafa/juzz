@@ -91,7 +91,7 @@ class AuthController extends StateNotifier<AuthState> {
 
     // The app is for teachers and school staff. Anyone else belongs on the web panel.
     if (!user.canRecord) {
-      throw const ApiException(403, 'This app is for teachers and administrators.');
+      throw const ApiException(403, 'This app is for Shks, Shkts and administrators.');
     }
 
     await _ref.read(tokenStoreProvider).save(

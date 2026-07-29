@@ -162,7 +162,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           : const Text('Sign in'),
                     ),
                     const SizedBox(height: 24),
-                    Text('For teachers and school administrators',
+                    Text('For Shks, Shkts and school administrators',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
                   ],

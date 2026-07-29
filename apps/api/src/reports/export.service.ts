@@ -175,7 +175,7 @@ export class ExportService {
       ['School', `${rep.student.school} (${rep.student.schoolCode})`],
       ['Class', `${rep.student.className} · ${rep.student.level}`],
       ['Stream', rep.student.stream ?? 'N/A'],
-      ['Sheikh', rep.student.teacher ?? 'N/A'],
+      ['Shk / Shkt', rep.student.teacher ?? 'N/A'],
       ['Guardian', `${rep.student.guardianName ?? 'N/A'} ${rep.student.guardianPhone ?? ''}`.trim()],
       ['Status', rep.student.status],
       ['', ''],
@@ -508,7 +508,7 @@ export class ExportService {
         `Revisions: ${s.revisions}     Assessments: ${s.assessments}     Average score: ${s.avgScore ?? 'N/A'}`,
         `Total mistakes: ${s.mistakes}`,
         `Attendance: ${att}`,
-        `Sheikh: ${rep.student.teacher ?? 'N/A'}     Guardian: ${rep.student.guardianName ?? 'N/A'} ${rep.student.guardianPhone ?? ''}`,
+        `Shk / Shkt: ${rep.student.teacher ?? 'N/A'}     Guardian: ${rep.student.guardianName ?? 'N/A'} ${rep.student.guardianPhone ?? ''}`,
       ].forEach((l) => doc.text(l));
 
       this.sectionTitle(doc, `Memorization (${rep.memorizations.length})`);
@@ -550,7 +550,7 @@ export class ExportService {
       doc.moveTo(MARGIN, y + 26).lineTo(MARGIN + colW, y + 26).stroke();
       doc.moveTo(MARGIN + colW + 40, y + 26).lineTo(MARGIN + 2 * colW + 40, y + 26).stroke();
       doc.font('Helvetica').fontSize(8).fillColor(GREY);
-      doc.text("Sheikh's signature", MARGIN, y + 30, { width: colW });
+      doc.text("Shk / Shkt signature", MARGIN, y + 30, { width: colW });
       doc.text('Manager / EMT', MARGIN + colW + 40, y + 30, { width: colW });
       },
       { schoolName: rep.student.school },

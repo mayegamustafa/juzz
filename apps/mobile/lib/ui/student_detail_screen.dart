@@ -459,7 +459,7 @@ class _RecordActions extends StatelessWidget {
           IconButton(
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.lock_open_rounded, size: 17),
-            tooltip: 'Unlock for the Sheikh (24h)',
+            tooltip: 'Unlock for 24h',
             onPressed: onUnlock,
           ),
       ],
@@ -608,7 +608,7 @@ class _RecordTabState extends ConsumerState<_RecordTab> {
         onUnlock: (e) async {
           try {
             await widget.onUnlock(e);
-            if (mounted) showSnack(context, 'Unlocked for the Sheikh for 24 hours');
+            if (mounted) showSnack(context, 'Unlocked for 24 hours');
           } catch (err) {
             if (mounted) showSnack(context, '$err', error: true);
           } finally {
@@ -869,7 +869,7 @@ class _RemarksTab extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _SheetScaffold(
-        title: editing == null ? 'Teacher remark' : 'Edit remark',
+        title: editing == null ? 'Shk / Shkt remark' : 'Edit remark',
         onSave: () async {
           final text = controller.text.trim();
           if (text.isEmpty) return;

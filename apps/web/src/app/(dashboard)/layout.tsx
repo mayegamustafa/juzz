@@ -39,14 +39,14 @@ const NAV: NavItem[] = [
   { href: '/tracking', label: 'Tracking', icon: Tracking },
   { href: '/attendance', label: 'Attendance', icon: Calendar },
   { href: '/students', label: 'Students', icon: Students },
-  { href: '/teachers', label: 'Teachers', icon: Teachers, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
+  { href: '/teachers', label: 'Shks & Shkts', icon: Teachers, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
   { href: '/schools', label: 'Schools', icon: SchoolIcon, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
   { href: '/analytics', label: 'Analytics', icon: Reports },
   { href: '/reports', label: 'Reports', icon: Download },
   { href: '/targets', label: 'Targets', icon: Target, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
   { href: '/users', label: 'Staff accounts', icon: Shield, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
   // Publishing a release reaches every phone, so it stays with the owner.
-  { href: '/mobile-app', label: 'Teacher app', icon: Smartphone, roles: ['SUPER_ADMIN'] },
+  { href: '/mobile-app', label: 'Mobile app', icon: Smartphone, roles: ['SUPER_ADMIN'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

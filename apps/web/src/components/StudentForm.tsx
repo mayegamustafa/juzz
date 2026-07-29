@@ -248,7 +248,7 @@ export function StudentForm({
                 </select>
               </div>
               <div>
-                <label className="label">Sheikh</label>
+                <label className="label">Shk / Shkt</label>
                 <select
                   className="input"
                   value={form.primaryTeacherId}

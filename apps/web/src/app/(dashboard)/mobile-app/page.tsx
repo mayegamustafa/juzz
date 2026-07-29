@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth, isAdmin } from '@/lib/auth';
+import { useAuth, isOwner } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { PageHeader, Spinner, Empty } from '@/components/ui';
 import { useToast } from '@/components/Toast';
@@ -49,8 +49,8 @@ export default function MobileAppPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (!isAdmin(user?.role)) {
-    return <Empty>Only the secretariat can manage the teacher app's releases.</Empty>;
+  if (!isOwner(user?.role)) {
+    return <Empty>Only the super admin can manage mobile app releases.</Empty>;
   }
 
   const publish = async () => {
@@ -64,7 +64,7 @@ export default function MobileAppPage() {
         mandatory: form.mandatory,
       });
       setRelease(saved);
-      toast.success('Release published. Every Sheikh will be offered this update next time they open the app.');
+      toast.success('Release published. Every Shk and Shkt is offered this update next time they open the app.');
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -77,8 +77,8 @@ export default function MobileAppPage() {
   return (
     <div>
       <PageHeader
-        title="Teacher app updates"
-        subtitle="Publish a new build after every Codemagic run, and Sheikhs are offered it next time they open the app"
+        title="Mobile app updates"
+        subtitle="Publish a new build after every Codemagic run, and Shks and Shkts are offered it next time they open the app"
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -134,7 +134,7 @@ export default function MobileAppPage() {
                 checked={form.mandatory}
                 onChange={(e) => setForm({ ...form, mandatory: e.target.checked })}
               />
-              Mandatory: Sheikhs must update before continuing
+              Mandatory: everyone must update before continuing
             </label>
             <button
               className="btn-primary w-full"
@@ -179,7 +179,7 @@ export default function MobileAppPage() {
             </dl>
           )}
           <div className="mt-4 rounded-lg border p-3 text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-            Sheikhs get a prompt (or a required update if marked mandatory) the next time they open
+            Shks and Shkts get a prompt (or a required update if marked mandatory) the next time they open
             the app. Installing the new APK over the old one keeps their data and login, with no
             uninstall needed, since it's signed with the same key.
           </div>

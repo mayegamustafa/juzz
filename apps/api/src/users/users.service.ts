@@ -61,7 +61,7 @@ export class UsersService {
   private assertMayAssign(actor: AuthUser, role: Role) {
     if (!MANAGEABLE_ROLES.includes(role)) {
       throw new BadRequestException(
-        'Sheikh accounts are created on the Sheikhs page, so their teaching record is created with them.',
+        'Shk and Shkt accounts are created on their own page, so the teaching record is created with the login.',
       );
     }
     if (role === Role.SUPER_ADMIN && actor.role !== Role.SUPER_ADMIN) {
@@ -136,7 +136,7 @@ export class UsersService {
       }
       // Moving a teacher account here would leave its Teacher record dangling.
       if (!MANAGEABLE_ROLES.includes(target.role)) {
-        throw new BadRequestException('Sheikh accounts are managed on the Sheikhs page');
+        throw new BadRequestException('Shk and Shkt accounts are managed on their own page');
       }
       await this.assertNotLastSuperAdmin(id);
     }

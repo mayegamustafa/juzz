@@ -178,10 +178,10 @@ export default function AnalyticsPage() {
 
         {/* Sheikhs */}
         <GroupTable
-          title="By sheikh"
+          title="By Shk / Shkt"
           rows={data.bySheikh}
-          emptyText="No sheikhs assigned."
-          labelHeader="Sheikh"
+          emptyText="No Shks or Shkts assigned."
+          labelHeader="Shk / Shkt"
           renderLabel={(g) => g.name}
         />
       </div>
@@ -250,7 +250,7 @@ export default function AnalyticsPage() {
                 <tr className="border-b text-left" style={{ borderColor: 'var(--border)' }}>
                   <th className="px-4 py-2.5">Pupil</th>
                   <th className="px-4 py-2.5">Class</th>
-                  <th className="px-4 py-2.5">Sheikh</th>
+                  <th className="px-4 py-2.5">Shk / Shkt</th>
                   <th className="min-w-32 px-4 py-2.5">Progress</th>
                   <th className="px-4 py-2.5 text-center">Mistakes</th>
                 </tr>

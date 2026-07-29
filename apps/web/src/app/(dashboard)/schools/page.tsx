@@ -204,7 +204,7 @@ export default function SchoolsPage() {
                   <b>{s._count.students}</b> pupils
                 </span>
                 <span>
-                  <b>{s._count.teachers}</b> sheikhs
+                  <b>{s._count.teachers}</b> Shks/Shkts
                 </span>
                 <span>
                   <b>{s._count.classes}</b> classes
@@ -280,7 +280,7 @@ export default function SchoolsPage() {
         title={`Delete ${deleting?.name}?`}
         message={
           <>
-            This permanently removes the school. Schools that still hold pupils or sheikhs cannot be
+            This permanently removes the school. Schools that still hold pupils or staff cannot be
             deleted; archive them instead.
           </>
         }

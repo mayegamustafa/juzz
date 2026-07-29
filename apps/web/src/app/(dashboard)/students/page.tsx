@@ -260,7 +260,7 @@ export default function StudentsPage() {
                 <tr className="border-b text-left" style={{ borderColor: 'var(--border)' }}>
                   <th className="px-4 py-3">Pupil</th>
                   <th className="px-4 py-3">Class</th>
-                  <th className="px-4 py-3">Sheikh</th>
+                  <th className="px-4 py-3">Shk / Shkt</th>
                   {enrollmentStatus === 'APPROVED' ? (
                     <th className="min-w-40 px-4 py-3">Progress</th>
                   ) : (
@@ -388,7 +388,7 @@ export default function StudentsPage() {
           setRejectReason('');
         }}
         title={`Reject ${rejecting?.fullName}?`}
-        description="The record is kept (not deleted) so the Sheikh can see why, but it will never join the official roster under this entry."
+        description="The record is kept (not deleted) so they can see why, but it will never join the official roster under this entry."
         width="max-w-sm"
         footer={
           <>
@@ -408,7 +408,7 @@ export default function StudentsPage() {
           </>
         }
       >
-        <label className="label">Reason (optional, shown to the Sheikh)</label>
+        <label className="label">Reason (optional, shown to the Shk / Shkt)</label>
         <input
           className="input"
           placeholder="e.g. Duplicate of an existing pupil"

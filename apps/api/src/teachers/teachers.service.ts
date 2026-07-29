@@ -40,7 +40,7 @@ export class TeachersService {
       where: { id },
       include: { school: { select: { organizationId: true } } },
     });
-    if (!teacher) throw new NotFoundException('Sheikh not found');
+    if (!teacher) throw new NotFoundException('Shk / Shkt not found');
     if (teacher.school.organizationId !== user.organizationId) throw new ForbiddenException();
     if (!isOrgWide(user) && teacher.schoolId !== user.schoolId) throw new ForbiddenException();
     return teacher;
@@ -52,7 +52,7 @@ export class TeachersService {
   ) {
     // An org-wide caller is not bound to a school, so they must name one.
     const schoolId = isOrgWide(user) ? data.schoolId : user.schoolId;
-    if (!schoolId) throw new BadRequestException('A school must be selected for this sheikh');
+    if (!schoolId) throw new BadRequestException('A school must be selected');
     assertSchoolAccess(user, schoolId);
 
     // Optionally create a linked login account so the sheikh can use the mobile app.
@@ -90,7 +90,7 @@ export class TeachersService {
 
     // Transferring a sheikh between schools is a secretariat action.
     if (data.schoolId && data.schoolId !== teacher.schoolId) {
-      if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may transfer a sheikh');
+      if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may transfer them');
       assertSchoolAccess(user, data.schoolId);
     }
 
@@ -127,7 +127,7 @@ export class TeachersService {
     const pupils = await this.prisma.student.count({ where: { primaryTeacherId: id } });
     if (pupils > 0) {
       throw new ConflictException(
-        `This sheikh still has ${pupils} pupil${pupils === 1 ? '' : 's'}. Reassign them first, or deactivate instead.`,
+        `They still have ${pupils} pupil${pupils === 1 ? '' : 's'}. Reassign the pupils first, or deactivate instead.`,
       );
     }
 
@@ -142,7 +142,7 @@ export class TeachersService {
 
   async resetPassword(user: AuthUser, id: string, newPassword: string) {
     const teacher = await this.assertOwned(user, id);
-    if (!teacher.userId) throw new NotFoundException('This sheikh has no login account');
+    if (!teacher.userId) throw new NotFoundException('They have no login account');
     await this.prisma.user.update({
       where: { id: teacher.userId },
       data: { passwordHash: await argon2.hash(newPassword) },
@@ -182,7 +182,7 @@ export class TeachersService {
       if (!student) throw new NotFoundException('Pupil not found');
       // A sheikh teaches at one school; a pupil cannot be assigned across schools.
       if (student.schoolId !== teacher.schoolId) {
-        throw new ConflictException('Pupil and sheikh belong to different schools');
+        throw new ConflictException('Pupil and Shk/Shkt belong to different schools');
       }
       await this.prisma.student.update({
         where: { id: data.studentId },

@@ -47,7 +47,7 @@ export const useAuth = () => useContext(Ctx);
 export const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   SUPERVISOR: 'Manager / EMT',
-  TEACHER: 'Sheikh',
+  TEACHER: 'Shk / Shkt',
   STUDENT: 'Pupil',
 };
 

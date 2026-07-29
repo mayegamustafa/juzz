@@ -75,7 +75,7 @@ export class SchoolsService {
     if (students > 0 || teachers > 0) {
       const parts = [
         students > 0 ? `${students} pupil${students === 1 ? '' : 's'}` : null,
-        teachers > 0 ? `${teachers} sheikh${teachers === 1 ? '' : 's'}` : null,
+        teachers > 0 ? `${teachers} Shk/Shkt${teachers === 1 ? '' : 's'}` : null,
       ].filter(Boolean);
       throw new ConflictException(
         `This school still has ${parts.join(' and ')}. Move or remove them first, or archive the school instead.`,

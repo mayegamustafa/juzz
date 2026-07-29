@@ -114,7 +114,7 @@ export default function StudentDetailPage() {
 
   const unlockRemark = async (remarkId: string) => {
     await api.post(`/remarks/${remarkId}/unlock`, {});
-    toast.success('Unlocked for the Sheikh for 24 hours');
+    toast.success('Unlocked for 24 hours');
     api.get<Remark[]>(`/students/${id}/remarks`).then(setRemarks);
   };
 
@@ -127,7 +127,7 @@ export default function StudentDetailPage() {
       </Link>
       <PageHeader
         title={s.fullName}
-        subtitle={`${s.schoolClass.level} · ${s.school.name} · Sheikh: ${s.primaryTeacher?.fullName ?? 'N/A'}`}
+        subtitle={`${s.schoolClass.level} · ${s.school.name} · Shk/Shkt: ${s.primaryTeacher?.fullName ?? 'N/A'}`}
         action={
           <div className="flex gap-2">
             <button className="btn-outline" onClick={() => exportAs('pdf')} disabled={!!exporting}>
@@ -214,7 +214,7 @@ export default function StudentDetailPage() {
 
       {/* Remarks */}
       <div className="card mt-4 p-5">
-        <h2 className="mb-3 font-semibold">Teacher remarks</h2>
+        <h2 className="mb-3 font-semibold">Shk / Shkt remarks</h2>
         {editable && (
           <div className="mb-4 flex gap-2">
             <input

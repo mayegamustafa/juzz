@@ -104,7 +104,7 @@ export function RecordActions({
         </button>
       )}
       {canManage && !canEdit && (
-        <button className="btn-icon h-6 w-6" title="Unlock for the Sheikh (24h)" onClick={onUnlock}>
+        <button className="btn-icon h-6 w-6" title="Unlock for the Shk / Shkt (24h)" onClick={onUnlock}>
           <Key size={11} />
         </button>
       )}
@@ -160,7 +160,7 @@ function Revision({ studentId, editable }: { studentId: string; editable: boolea
 
   const unlock = async (id: string) => {
     await api.post(`/quran/revision/${id}/unlock`, {});
-    toast.success('Unlocked for the Sheikh for 24 hours');
+    toast.success('Unlocked for 24 hours');
     load();
   };
 
@@ -289,7 +289,7 @@ function Assessment({ studentId, editable }: { studentId: string; editable: bool
 
   const unlock = async (id: string) => {
     await api.post(`/quran/assessment/${id}/unlock`, {});
-    toast.success('Unlocked for the Sheikh for 24 hours');
+    toast.success('Unlocked for 24 hours');
     load();
   };
 
@@ -423,7 +423,7 @@ function Mistakes({ studentId, editable }: { studentId: string; editable: boolea
 
   const unlock = async (id: string) => {
     await api.post(`/quran/mistakes/${id}/unlock`, {});
-    toast.success('Unlocked for the Sheikh for 24 hours');
+    toast.success('Unlocked for 24 hours');
     load();
   };
 
@@ -546,7 +546,7 @@ function Attendance({ studentId }: { studentId: string; editable: boolean }) {
 
   const unlock = async (id: string) => {
     await api.post(`/attendance/${id}/unlock`, {});
-    toast.success('Unlocked for the Sheikh for 24 hours');
+    toast.success('Unlocked for 24 hours');
     load();
   };
 
