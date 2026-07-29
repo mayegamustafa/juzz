@@ -9,6 +9,16 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # Generated output, not our code. On CI this holds vendored plugin sources
+    # (build/ios/SourcePackages/...), whose own test files import dev
+    # dependencies we do not have, so analysing them fails the build for
+    # problems that are not ours and that we cannot fix.
+    - build/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
