@@ -56,6 +56,19 @@ workflows:
         working_directory: apps/mobile
         script: |
           set -e
+
+          # An empty API_BASE_URL builds an APK that falls back to the Android
+          # emulator's localhost alias, so it installs and signs in to nothing.
+          # That is a silent failure discovered only on a Sheikh's phone, so
+          # stop here instead.
+          if [ -z "$API_BASE_URL" ]; then
+            echo "API_BASE_URL is not set." >&2
+            echo "Add it to the 'juzz_release' variable group in Codemagic, e.g." >&2
+            echo "  API_BASE_URL = https://api.juzz.sakcps.org/api" >&2
+            exit 1
+          fi
+          echo "Building against $API_BASE_URL"
+
           BUILD_NUMBER=$PROJECT_BUILD_NUMBER
           VERSION_NAME="1.0.$BUILD_NUMBER"
           echo "Building versionCode=$BUILD_NUMBER versionName=$VERSION_NAME"
