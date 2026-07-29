@@ -106,7 +106,9 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/icon_full.png"
-  adaptive_icon_background: "#047857"
+  # White, not emerald: the foreground is the crest recoloured dark green, so an
+  # emerald background renders dark green on dark green and the mark vanishes.
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon/icon_foreground.png"
   min_sdk_android: 21
   remove_alpha_ios: true
