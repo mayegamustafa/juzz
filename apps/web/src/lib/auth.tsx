@@ -59,3 +59,10 @@ export const isAdmin = (role?: string) => role === 'SUPER_ADMIN' || role === 'SU
 
 /** Who may record pupil progress. */
 export const canEdit = (role?: string) => isAdmin(role) || role === 'TEACHER';
+
+/**
+ * The system owner. Managers administer the organisation day to day; a few
+ * deployment-level settings (publishing a mobile release, granting super admin)
+ * stay with the owner because a mistake there reaches every device at once.
+ */
+export const isOwner = (role?: string) => role === 'SUPER_ADMIN';

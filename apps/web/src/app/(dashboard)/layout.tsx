@@ -17,6 +17,7 @@ import {
   Reports,
   Download,
   Target,
+  Shield,
   Smartphone,
   Menu,
   Sun,
@@ -43,7 +44,9 @@ const NAV: NavItem[] = [
   { href: '/analytics', label: 'Analytics', icon: Reports },
   { href: '/reports', label: 'Reports', icon: Download },
   { href: '/targets', label: 'Targets', icon: Target, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
-  { href: '/mobile-app', label: 'Teacher app', icon: Smartphone, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
+  { href: '/users', label: 'Staff accounts', icon: Shield, roles: ['SUPER_ADMIN', 'SUPERVISOR'] },
+  // Publishing a release reaches every phone, so it stays with the owner.
+  { href: '/mobile-app', label: 'Teacher app', icon: Smartphone, roles: ['SUPER_ADMIN'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
