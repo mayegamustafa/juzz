@@ -281,7 +281,15 @@ export default function TeachersPage() {
         open={creating || !!editing}
         onClose={closeForm}
         title={editing ? `Edit ${editing.fullName}` : 'Add Shk / Shkt'}
-        description={editing ? 'Changing the school transfers them.' : undefined}
+        description={
+          editing
+            ? editing._count.primaryStudents > 0
+              ? `Changing the school transfers them. They hold ${editing._count.primaryStudents} pupil${
+                  editing._count.primaryStudents === 1 ? '' : 's'
+                } at their current station, so reassign those first.`
+              : 'Changing the school transfers them to another station.'
+            : undefined
+        }
         footer={
           <>
             <button className="btn-outline" onClick={closeForm} disabled={saving}>

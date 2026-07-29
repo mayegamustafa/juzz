@@ -88,10 +88,23 @@ export class TeachersService {
   ) {
     const teacher = await this.assertOwned(user, id);
 
-    // Transferring a sheikh between schools is a secretariat action.
+    // Transferring between stations is a secretariat action.
     if (data.schoolId && data.schoolId !== teacher.schoolId) {
       if (!isOrgWide(user)) throw new ForbiddenException('Only the secretariat may transfer them');
       assertSchoolAccess(user, data.schoolId);
+
+      // A pupil may only be assigned to someone at their own school; moving
+      // somebody who still holds a roster would strand those pupils at the old
+      // station, still on a roster belonging to another school. Reassign first
+      // so nobody is left untracked.
+      const held = await this.prisma.student.count({ where: { primaryTeacherId: id } });
+      if (held > 0) {
+        throw new ConflictException(
+          `They still have ${held} pupil${held === 1 ? '' : 's'} at their current station. ` +
+            'Reassign those pupils to someone there first, otherwise they would be left with ' +
+            'no one tracking them.',
+        );
+      }
     }
 
     const updated = await this.prisma.teacher.update({
