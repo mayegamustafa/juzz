@@ -398,6 +398,17 @@ class _SurahChip extends StatelessWidget {
                 color: color != null ? Colors.white : scheme.onSurface,
               ),
             ),
+            // The surah's own name, which is how a Sheikh actually refers to it.
+            if (surah.nameArabic.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Text(
+                surah.nameArabic,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: color != null ? Colors.white70 : scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ],
         ),
       ),

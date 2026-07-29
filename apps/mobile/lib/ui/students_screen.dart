@@ -31,7 +31,22 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My students'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('My pupils'),
+            // Recording lives inside a pupil, which is not obvious from a list
+            // of names, so say so rather than leaving it to be discovered.
+            Text(
+              'Tap a pupil to record progress',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.normal,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add_alt_1_rounded),
@@ -72,8 +87,8 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
                 if (b == null || b.students.isEmpty) {
                   return const EmptyState(
                     icon: Icons.groups_outlined,
-                    title: 'No students',
-                    subtitle: 'Students assigned to you will appear here.',
+                    title: 'No pupils',
+                    subtitle: 'Pupils assigned to you will appear here.',
                   );
                 }
                 final list = b.students.where((s) {

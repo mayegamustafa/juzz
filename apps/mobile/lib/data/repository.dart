@@ -337,6 +337,14 @@ class Repository {
   Future<void> rejectPupil(String id, {String? reason}) =>
       _api.post('/students/$id/reject', {'reason': ?reason});
 
+  /// How each Shk and Shkt's roster is performing, best average first.
+  Future<List<StaffRanking>> staffRanking() async {
+    final res = await _api.get('/analytics/overview') as Map<String, dynamic>;
+    return ((res['bySheikh'] as List?) ?? const [])
+        .map((e) => StaffRanking.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
+  }
+
   /// Every school in the organisation, for scoping an announcement.
   Future<List<SchoolOption>> schools() async {
     final data = await _api.get('/schools') as List;

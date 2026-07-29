@@ -21,7 +21,7 @@ class AdminScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminScreenState extends ConsumerState<AdminScreen> with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs = TabController(length: 3, vsync: this);
 
   @override
   void dispose() {
@@ -37,14 +37,15 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with SingleTickerProv
         bottom: TabBar(
           controller: _tabs,
           tabs: const [
-            Tab(text: 'Verify pupils'),
+            Tab(text: 'Verify'),
+            Tab(text: 'Performance'),
             Tab(text: 'Announce'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabs,
-        children: const [_PendingTab(), _AnnounceTab()],
+        children: const [_PendingTab(), _PerformanceTab(), _AnnounceTab()],
       ),
     );
   }
@@ -348,6 +349,109 @@ class _AnnounceTabState extends ConsumerState<_AnnounceTab> {
           style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
+    );
+  }
+}
+
+
+// ---------------- Shk / Shkt performance ----------------
+
+/// How each Shk and Shkt's roster is doing, ranked by average progress.
+/// The secretariat's view of their staff, which is a different question from
+/// the progress screens a Shk sees for their own pupils.
+class _PerformanceTab extends ConsumerStatefulWidget {
+  const _PerformanceTab();
+
+  @override
+  ConsumerState<_PerformanceTab> createState() => _PerformanceTabState();
+}
+
+class _PerformanceTabState extends ConsumerState<_PerformanceTab> {
+  late Future<List<StaffRanking>> _future = ref.read(repositoryProvider).staffRanking();
+
+  void _reload() {
+    if (!mounted) return;
+    setState(() => _future = ref.read(repositoryProvider).staffRanking());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<StaffRanking>>(
+      future: _future,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) return const ListSkeleton(count: 5);
+        if (snap.hasError) return ErrorState(error: snap.error!, onRetry: _reload);
+
+        final rows = snap.data ?? const <StaffRanking>[];
+        if (rows.isEmpty) {
+          return const EmptyState(
+            icon: Icons.leaderboard_outlined,
+            title: 'Nothing to rank yet',
+            subtitle: 'Averages appear once pupils are assigned and progress recorded.',
+          );
+        }
+
+        final best = rows.first.avgPercent;
+        return RefreshIndicator(
+          onRefresh: () async => _reload(),
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: rows.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (_, i) {
+              final r = rows[i];
+              final scheme = Theme.of(context).colorScheme;
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    children: [
+                      // Rank, not a medal: this is a management view, and the
+                      // ordering is the point rather than a competition.
+                      SizedBox(
+                        width: 26,
+                        child: Text(
+                          '${i + 1}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: i == 0 ? Brand.emerald : scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(r.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                            const SizedBox(height: 2),
+                            Text(
+                              [
+                                '${r.pupils} pupil${r.pupils == 1 ? '' : 's'}',
+                                if (r.avgScore != null) 'avg score ${r.avgScore}',
+                              ].join(' · '),
+                              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 6),
+                            // Scaled against the leader so the spread is legible
+                            // even when every average is low early in a term.
+                            ProgressBar(percent: best == 0 ? 0 : (r.avgPercent / best) * 100),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${r.avgPercent.toStringAsFixed(1)}%',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

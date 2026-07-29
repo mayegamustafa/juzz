@@ -16,14 +16,25 @@ class DashboardScreen extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final name = auth is AuthSignedIn ? auth.user.fullName.split(' ').first : '';
     final async = ref.watch(bootstrapProvider);
+    // "Shk NYOMBI". The secretariat carries no title, so they are greeted by
+    // name alone rather than with an honorific they do not hold.
+    final title = async.value?.title;
+    final greeting = title == null || title.isEmpty ? name : '$title $name';
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Assalamu alaikum', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal)),
-            Text(name, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+            Text(
+              'السلام عليكم',
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+            Text(greeting, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

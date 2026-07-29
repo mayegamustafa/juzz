@@ -231,12 +231,16 @@ class Student {
 /// Everything the app needs to work offline, fetched in one call.
 class Bootstrap {
   final int target;
+  /// How to address this user: "Shk", "Shkt", or null for the secretariat,
+  /// who hold no teaching record.
+  final String? title;
   final List<Surah> surahs;
   final List<SchoolClass> classes;
   final List<Student> students;
 
   const Bootstrap({
     required this.target,
+    this.title,
     required this.surahs,
     required this.classes,
     required this.students,
@@ -244,6 +248,7 @@ class Bootstrap {
 
   factory Bootstrap.fromJson(Map<String, dynamic> j) => Bootstrap(
         target: _int(j['target']),
+        title: j['title'] as String?,
         surahs: ((j['surahs'] as List?) ?? const [])
             .map((e) => Surah.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -257,6 +262,7 @@ class Bootstrap {
 
   Map<String, dynamic> toJson() => {
         'target': target,
+        'title': title,
         'surahs': surahs.map((e) => e.toJson()).toList(),
         'classes': classes.map((e) => e.toJson()).toList(),
         'students': students.map((e) => e.toJson()).toList(),
@@ -441,5 +447,31 @@ class AttendanceRow {
         status: status ?? this.status,
         recordId: recordId,
         canEdit: canEdit,
+      );
+}
+
+/// One Shk or Shkt's standing in the org-wide ranking, as the secretariat
+/// sees it: how their roster is doing on average, not their own progress.
+class StaffRanking {
+  final String id;
+  final String name;
+  final int pupils;
+  final double avgPercent;
+  final int? avgScore;
+
+  const StaffRanking({
+    required this.id,
+    required this.name,
+    required this.pupils,
+    required this.avgPercent,
+    this.avgScore,
+  });
+
+  factory StaffRanking.fromJson(Map<String, dynamic> j) => StaffRanking(
+        id: j['id'] as String? ?? '',
+        name: j['name'] as String? ?? '',
+        pupils: _int(j['students']),
+        avgPercent: _dbl(j['avgPercent']),
+        avgScore: j['avgScore'] == null ? null : _int(j['avgScore']),
       );
 }

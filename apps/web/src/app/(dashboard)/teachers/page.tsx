@@ -13,9 +13,12 @@ interface School {
   code: string;
   name: string;
 }
+type Title = 'SHK' | 'SHKT';
+
 interface Teacher {
   id: string;
   fullName: string;
+  title: Title;
   phone: string | null;
   isActive: boolean;
   school: { id: string; code: string; name: string };
@@ -23,7 +26,7 @@ interface Teacher {
   _count: { primaryStudents: number };
 }
 
-const EMPTY = { fullName: '', phone: '', schoolId: '', email: '', password: '' };
+const EMPTY = { fullName: '', title: 'SHK' as Title, phone: '', schoolId: '', email: '', password: '' };
 
 export default function TeachersPage() {
   const { user } = useAuth();
@@ -70,7 +73,7 @@ export default function TeachersPage() {
   };
 
   const openEdit = (t: Teacher) => {
-    setForm({ fullName: t.fullName, phone: t.phone ?? '', schoolId: t.school.id, email: '', password: '' });
+    setForm({ fullName: t.fullName, title: t.title ?? 'SHK', phone: t.phone ?? '', schoolId: t.school.id, email: '', password: '' });
     setFormError('');
     setEditing(t);
   };
@@ -88,6 +91,7 @@ export default function TeachersPage() {
       if (editing) {
         await api.patch(`/teachers/${editing.id}`, {
           fullName: form.fullName,
+          title: form.title,
           phone: form.phone || undefined,
           schoolId: form.schoolId,
         });
@@ -95,6 +99,7 @@ export default function TeachersPage() {
       } else {
         await api.post('/teachers', {
           fullName: form.fullName,
+          title: form.title,
           phone: form.phone || undefined,
           schoolId: form.schoolId,
           // A login is optional: create one only if both fields are filled.
@@ -216,7 +221,12 @@ export default function TeachersPage() {
             <tbody>
               {visible.map((t) => (
                 <tr key={t.id} className="border-b last:border-0" style={{ borderColor: 'var(--border)' }}>
-                  <td className="px-4 py-2.5 font-medium">{t.fullName}</td>
+                  <td className="px-4 py-2.5 font-medium">
+                    <span className="mr-1 text-xs font-normal" style={{ color: 'var(--muted)' }}>
+                      {t.title === 'SHKT' ? 'Shkt' : 'Shk'}
+                    </span>
+                    {t.fullName}
+                  </td>
                   <td className="px-4 py-2.5">
                     <span className="badge bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
                       {t.school.code}
@@ -284,9 +294,22 @@ export default function TeachersPage() {
         }
       >
         <div className="space-y-3">
-          <div>
-            <label className="label">Full name</label>
-            <input className="input" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="label">Title</label>
+              <select
+                className="input"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value as Title })}
+              >
+                <option value="SHK">Shk</option>
+                <option value="SHKT">Shkt</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Full name</label>
+              <input className="input" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+            </div>
           </div>
           <div>
             <label className="label">School</label>

@@ -36,6 +36,7 @@ void main() {
     test('parses the /sync/bootstrap payload', () {
       final b = Bootstrap.fromJson({
         'target': 48,
+        'title': 'Shkt',
         'surahs': [
           {
             'id': 's1',
@@ -71,6 +72,8 @@ void main() {
       expect(b.classes.single.level, 'P.1');
       expect(b.students.single.surahFractions['s1'], 1.0);
       expect(b.students.single.enrollmentStatus, EnrollmentStatus.approved);
+      expect(b.title, 'Shkt');
+      expect(b.surahs.single.nameArabic, 'الناس');
       expect(b.students.single.percent, closeTo(2.1, 0.001));
     });
 
@@ -79,6 +82,8 @@ void main() {
       expect(b.surahs, isEmpty);
       expect(b.students, isEmpty);
       expect(b.classes, isEmpty);
+      // The secretariat holds no teaching record, so no honorific comes back.
+      expect(b.title, isNull);
     });
   });
 
