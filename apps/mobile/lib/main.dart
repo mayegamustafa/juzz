@@ -14,6 +14,12 @@ Future<void> main() async {
 
   // Permissions + notification channel must exist before any poll fires.
   await container.read(notificationServiceProvider).init();
+
+  // Push is what delivers notifications while the app is closed. It is
+  // best-effort: without Firebase configured, or if the Sheikh declines the
+  // permission, the app carries on with the in-app poll instead.
+  await container.read(pushServiceProvider).init();
+
   await container.read(authProvider.notifier).restore();
 
   runApp(

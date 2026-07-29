@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../data/api_client.dart';
 import '../data/local_db.dart';
 import '../data/notification_service.dart';
+import '../data/push_service.dart';
 import '../data/repository.dart';
 import '../data/sync_service.dart';
 import '../data/token_store.dart';
@@ -34,6 +35,11 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
   ref.onDispose(s.dispose);
   return s;
 });
+
+final pushServiceProvider = Provider<PushService>((ref) => PushService(
+      ref.watch(apiClientProvider),
+      ref.watch(notificationServiceProvider).plugin,
+    ));
 
 final updateServiceProvider = Provider<UpdateService>((ref) => UpdateService(ref.watch(apiClientProvider)));
 
@@ -100,10 +106,15 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> _afterSignIn() async {
     await _ref.read(syncServiceProvider).start();
     _ref.read(notificationServiceProvider).startPolling();
+    // Tie this device to the signed-in user so pushes reach them while closed.
+    await _ref.read(pushServiceProvider).registerDevice();
   }
 
   Future<void> logout() async {
     _ref.read(notificationServiceProvider).stopPolling();
+    // Detach before clearing tokens: a shared phone must stop receiving the
+    // previous Sheikh's notifications.
+    await _ref.read(pushServiceProvider).unregisterDevice();
     await _ref.read(tokenStoreProvider).clear();
     await _ref.read(localDbProvider).clearAll(); // never leak data to the next user
     state = const AuthSignedOut();

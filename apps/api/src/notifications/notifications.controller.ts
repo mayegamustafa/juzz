@@ -11,6 +11,11 @@ class BroadcastDto {
   @IsOptional() @IsString() schoolId?: string;
 }
 
+class DeviceDto {
+  @IsString() @MaxLength(4096) token!: string;
+  @IsOptional() @IsIn(['android', 'ios']) platform?: string;
+}
+
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
@@ -36,6 +41,16 @@ export class NotificationsController {
   @Post('read-all')
   markAllRead(@CurrentUser() user: AuthUser) {
     return this.notifications.markAllRead(user);
+  }
+
+  @Post('devices')
+  registerDevice(@CurrentUser() user: AuthUser, @Body() dto: DeviceDto) {
+    return this.notifications.registerDevice(user, dto.token, dto.platform);
+  }
+
+  @Post('devices/remove')
+  unregisterDevice(@Body() dto: DeviceDto) {
+    return this.notifications.unregisterDevice(dto.token);
   }
 
   @Roles(Role.SUPER_ADMIN, Role.SUPERVISOR)

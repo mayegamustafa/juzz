@@ -1,4 +1,4 @@
-package com.qpms.qpms_teacher
+package com.juzz.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -8,6 +8,18 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Push notifications are optional. The google-services plugin hard-fails the
+// build when google-services.json is missing, which would block anyone building
+// the app before Firebase is set up, so apply it only when the file is there.
+// Without it the app still builds and falls back to polling while it is open.
+val googleServicesJson = file("google-services.json")
+if (googleServicesJson.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    logger.lifecycle("google-services.json found: Firebase push enabled.")
+} else {
+    logger.lifecycle("google-services.json absent: building without Firebase push.")
+}
+
 // Release signing. The app is distributed as a sideloaded APK, not through the
 // Play Store, so every release MUST be signed with the same key: Android only
 // installs an update over an existing app when the signatures match. A key
@@ -25,7 +37,7 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 
 android {
-    namespace = "com.qpms.qpms_teacher"
+    namespace = "com.juzz.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -39,9 +51,12 @@ android {
     }
 
     defaultConfig {
+        // Must match the package name registered in Firebase, or google-services
+        // cannot resolve this app and push silently never arrives.
+        //
         // Changing this after the first APK ships would read as a different app:
         // existing installs would not update, they would sit alongside it.
-        applicationId = "com.qpms.qpms_teacher"
+        applicationId = "com.juzz.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

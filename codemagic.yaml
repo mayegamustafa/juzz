@@ -12,6 +12,7 @@ workflows:
         # each one. Never commit real values.
         - juzz_release      # API_BASE_URL, PUBLISH_API_URL, PUBLISH_EMAIL, PUBLISH_PASSWORD
         - juzz_github       # GITHUB_TOKEN, GITHUB_REPO
+        - juzz_firebase     # GOOGLE_SERVICES_JSON (base64), optional
       android_signing:
         # Upload the keystore once under Codemagic > Code signing identities >
         # Android keystores, using this reference name. Every build must use the
@@ -31,6 +32,19 @@ workflows:
       - name: Test
         working_directory: apps/mobile
         script: flutter test
+
+      # Push notifications need this file at build time. Store it as a secure
+      # base64 variable (base64 -w0 google-services.json). Left unset, the build
+      # still succeeds and the app falls back to polling while it is open.
+      - name: Write google-services.json
+        working_directory: apps/mobile
+        script: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+            echo "google-services.json written; push notifications enabled."
+          else
+            echo "GOOGLE_SERVICES_JSON not set; building without push notifications."
+          fi
 
       # Codemagic increments PROJECT_BUILD_NUMBER on every build of this
       # workflow. Using it as the Android versionCode is what makes each APK
@@ -145,11 +159,11 @@ workflows:
       groups:
         - juzz_release
       vars:
-        BUNDLE_ID: "com.qpms.qpmsTeacher"
+        BUNDLE_ID: "com.juzz.app"
       # Requires an App Store Connect integration configured in the Codemagic UI:
       # ios_signing:
       #   distribution_type: app_store
-      #   bundle_identifier: com.qpms.qpmsTeacher
+      #   bundle_identifier: com.juzz.app
     scripts:
       - name: Get packages
         working_directory: apps/mobile

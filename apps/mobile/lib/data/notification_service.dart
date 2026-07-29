@@ -36,6 +36,10 @@ class NotificationService {
   Stream<int> get unreadStream => _unreadController.stream;
   int get unreadCount => _unread;
 
+  /// Shared with [PushService] so a foreground push is drawn through the same
+  /// already-initialised channel rather than a second, differently-configured one.
+  FlutterLocalNotificationsPlugin get plugin => _plugin;
+
   Future<void> init() async {
     const settings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),

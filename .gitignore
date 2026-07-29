@@ -31,6 +31,7 @@ apps/mobile/ios/Flutter/ephemeral/
 apps/mobile/android/.gradle/
 apps/mobile/android/local.properties
 apps/mobile/android/app/google-services.json
+apps/mobile/ios/Runner/GoogleService-Info.plist
 apps/mobile/android/key.properties
 apps/mobile/**/*.jks
 apps/mobile/**/*.keystore

@@ -108,3 +108,44 @@ There is no update path for the very first install: send Sheikhs the APK link
 directly. Android will warn about installing from an unknown source, which is
 expected for a sideloaded app; they allow it once for the browser or file
 manager they used. Every later release then updates in place.
+
+## Install warnings, and how to remove them
+
+A sideloaded APK **always** triggers warnings, and no change to the app can
+suppress them. This is deliberate on both platforms: the warning exists because
+the operating system genuinely cannot vouch for software it did not distribute.
+Expect, on Android:
+
+- "Install unknown apps" consent, once per source app (browser, Files, WhatsApp)
+- A Play Protect scan notice, and sometimes "unsafe app blocked" for an app with
+  no install history
+
+The app is already configured to look as unremarkable as possible to those
+scanners: it requests only `INTERNET`, `ACCESS_NETWORK_STATE` and
+`POST_NOTIFICATIONS`, blocks cleartext traffic except to local development
+addresses, and is signed with a stable release key. There is nothing further to
+gain from the app side.
+
+Removing the warnings entirely means letting the platform distribute the app.
+For a staff-sized audience both routes are free or cheap:
+
+### Android: Play Console internal testing
+
+- One-off $25 Google Play developer registration.
+- Upload the AAB to the **internal testing** track and add Sheikhs by email
+  (up to 100). No public listing, no review queue of any consequence.
+- They install from the Play Store like any other app: no unknown-source
+  prompt, no Play Protect warning, and **Play handles updates automatically**,
+  which makes the in-app update prompt redundant.
+- Build the bundle by adding `flutter build appbundle` alongside the APK step.
+
+### iOS: TestFlight
+
+- Requires the $99/year Apple Developer Program. There is no legitimate way to
+  install an iOS app outside the App Store, TestFlight, or a $299/year
+  enterprise programme with strict eligibility rules.
+- TestFlight allows up to 10,000 testers, installs without warnings, and
+  auto-updates.
+
+Until then, sideloading works fine; the warnings are a one-time nuisance per
+Sheikh, not an ongoing one.

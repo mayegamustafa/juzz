@@ -15,6 +15,26 @@ export class NotificationsService {
     @Inject(NOTIFICATION_CHANNELS) private readonly channels: NotificationChannel[],
   ) {}
 
+  /**
+   * Register this device for push. Keyed on the token, not the user: FCM may
+   * hand the same token to a device that a different Sheikh later signs into,
+   * and pushing that user's notifications to the previous owner would leak.
+   */
+  registerDevice(user: AuthUser, token: string, platform = 'android') {
+    return this.prisma.deviceToken.upsert({
+      where: { token },
+      create: { token, platform, userId: user.id },
+      update: { userId: user.id, platform },
+      select: { id: true },
+    });
+  }
+
+  /** Called on sign-out so a shared phone stops receiving the old user's push. */
+  async unregisterDevice(token: string) {
+    await this.prisma.deviceToken.deleteMany({ where: { token } });
+    return { removed: true };
+  }
+
   /** Internal: create one in-app notification and fan out to delivery channels. */
   async notify(input: NotifyInput) {
     const row = await this.prisma.notification.create({
