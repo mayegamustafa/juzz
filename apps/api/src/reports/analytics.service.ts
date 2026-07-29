@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { titleOf } from '../common/teacher-title';
 import { AuthUser } from '../common/decorators';
 import { isOrgWide } from '../common/scope';
 import { TARGET_SURAH_COUNT, progressPercent } from '../common/progress';
@@ -47,7 +48,7 @@ export class AnalyticsService {
       include: {
         school: { select: { id: true, code: true, name: true } },
         schoolClass: { select: { id: true, name: true, level: true } },
-        primaryTeacher: { select: { id: true, fullName: true } },
+        primaryTeacher: { select: { id: true, fullName: true, title: true } },
         _count: { select: { memorizations: true, revisions: true, mistakes: true } },
         assessments: { select: { score: true } },
       },
@@ -88,7 +89,11 @@ export class AnalyticsService {
     const bySheikh = groupBy(
       students.filter((s) => s.primaryTeacher),
       (s) => s.primaryTeacher!.id,
-      (s) => ({ id: s.primaryTeacher!.id, code: s.school.code, name: s.primaryTeacher!.fullName }),
+      (s) => ({
+        id: s.primaryTeacher!.id,
+        code: s.school.code,
+        name: `${titleOf(s.primaryTeacher!.title)} ${s.primaryTeacher!.fullName}`,
+      }),
     ).sort((a, b) => b.avgPercent - a.avgPercent);
 
     // ---- Pupils needing attention ----
@@ -100,7 +105,7 @@ export class AnalyticsService {
         admissionNo: s.admissionNo,
         school: s.school.code,
         level: s.schoolClass.level,
-        sheikh: s.primaryTeacher?.fullName ?? null,
+        sheikh: s.primaryTeacher ? `${titleOf(s.primaryTeacher.title)} ${s.primaryTeacher.fullName}` : null,
         memorized: s._count.memorizations,
         percent: pct(s),
         mistakes: s._count.mistakes,

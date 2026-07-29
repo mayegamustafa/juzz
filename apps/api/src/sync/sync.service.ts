@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../common/decorators';
 import { isOrgWide } from '../common/scope';
 import { TARGET_SURAH_COUNT, progressPercent } from '../common/progress';
+import { titleOf } from '../common/teacher-title';
 
 /**
  * One-shot hydration for the mobile app. On a poor connection we want a single
@@ -59,6 +60,9 @@ export class SyncService {
       serverTime: new Date().toISOString(),
       juz,
       target: TARGET_SURAH_COUNT,
+      // How to address the signed-in user. Null for the secretariat, who have
+      // no teaching record and are not addressed as Shk or Shkt.
+      title: teacher ? titleOf(teacher.title) : null,
       surahs,
       classes: [...classes.values()].sort((a, b) => a.level.localeCompare(b.level)),
       students: students.map((s) => {

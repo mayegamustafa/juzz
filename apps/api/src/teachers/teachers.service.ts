@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma, Role, TeacherTitle } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../common/decorators';
 import { assertSchoolAccess, isOrgWide } from '../common/scope';
@@ -48,7 +48,7 @@ export class TeachersService {
 
   async create(
     user: AuthUser,
-    data: { fullName: string; phone?: string; schoolId?: string; email?: string; password?: string },
+    data: { fullName: string; title?: TeacherTitle; phone?: string; schoolId?: string; email?: string; password?: string },
   ) {
     // An org-wide caller is not bound to a school, so they must name one.
     const schoolId = isOrgWide(user) ? data.schoolId : user.schoolId;
@@ -76,7 +76,7 @@ export class TeachersService {
     }
 
     return this.prisma.teacher.create({
-      data: { schoolId, fullName: data.fullName, phone: data.phone, userId },
+      data: { schoolId, fullName: data.fullName, title: data.title ?? 'SHK', phone: data.phone, userId },
       include: { school: { select: { code: true, name: true } } },
     });
   }
@@ -84,7 +84,7 @@ export class TeachersService {
   async update(
     user: AuthUser,
     id: string,
-    data: { fullName?: string; phone?: string; isActive?: boolean; schoolId?: string },
+    data: { fullName?: string; title?: TeacherTitle; phone?: string; isActive?: boolean; schoolId?: string },
   ) {
     const teacher = await this.assertOwned(user, id);
 
@@ -98,6 +98,7 @@ export class TeachersService {
       where: { id },
       data: {
         ...(data.fullName !== undefined ? { fullName: data.fullName } : {}),
+        ...(data.title !== undefined ? { title: data.title } : {}),
         ...(data.phone !== undefined ? { phone: data.phone } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         ...(data.schoolId ? { schoolId: data.schoolId } : {}),

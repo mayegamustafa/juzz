@@ -292,6 +292,49 @@ class AppNotification {
       );
 }
 
+/// A school, for scoping an announcement to one of them.
+class SchoolOption {
+  final String id;
+  final String code;
+  final String name;
+
+  const SchoolOption({required this.id, required this.code, required this.name});
+
+  factory SchoolOption.fromJson(Map<String, dynamic> j) => SchoolOption(
+        id: j['id'] as String,
+        code: j['code'] as String? ?? '',
+        name: j['name'] as String? ?? '',
+      );
+}
+
+/// A pupil a Shk or Shkt registered, waiting on the secretariat to verify it.
+class PendingPupil {
+  final String id;
+  final String fullName;
+  final String admissionNo;
+  final String? level;
+  final String? schoolCode;
+  final String? registeredBy;
+
+  const PendingPupil({
+    required this.id,
+    required this.fullName,
+    required this.admissionNo,
+    this.level,
+    this.schoolCode,
+    this.registeredBy,
+  });
+
+  factory PendingPupil.fromJson(Map<String, dynamic> j) => PendingPupil(
+        id: j['id'] as String,
+        fullName: j['fullName'] as String? ?? '',
+        admissionNo: j['admissionNo'] as String? ?? '',
+        level: (j['schoolClass'] as Map<String, dynamic>?)?['level'] as String?,
+        schoolCode: (j['school'] as Map<String, dynamic>?)?['code'] as String?,
+        registeredBy: (j['primaryTeacher'] as Map<String, dynamic>?)?['fullName'] as String?,
+      );
+}
+
 /// A memorization goal for the active term — set by the secretariat, either
 /// for the whole organisation/school/class, or aimed at one pupil by name
 /// (e.g. "memorize Surah Al-Mulk"). Read-only on mobile; assigning one is an

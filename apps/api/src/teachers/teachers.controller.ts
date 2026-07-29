@@ -1,11 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { TeacherTitle } from '@prisma/client';
 import { TeachersService } from './teachers.service';
 import { Roles, CurrentUser, AuthUser } from '../common/decorators';
 import { ADMIN_ROLES } from '../common/scope';
 
 class CreateTeacherDto {
   @IsString() fullName!: string;
+  @IsOptional() @IsIn(['SHK', 'SHKT']) title?: TeacherTitle;
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsString() schoolId?: string;
   @IsOptional() @IsEmail() email?: string;
@@ -13,6 +15,7 @@ class CreateTeacherDto {
 }
 class UpdateTeacherDto {
   @IsOptional() @IsString() fullName?: string;
+  @IsOptional() @IsIn(['SHK', 'SHKT']) title?: TeacherTitle;
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsString() schoolId?: string;

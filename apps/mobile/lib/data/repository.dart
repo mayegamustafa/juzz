@@ -298,4 +298,48 @@ class Repository {
       return cached.map((e) => AppNotification.fromJson((e as Map).cast<String, dynamic>())).toList();
     }
   }
+
+  // ---------- secretariat only ----------
+  //
+  // Deliberately not queued through the outbox. Each of these is a decision the
+  // sender wants confirmed there and then; replaying an announcement or an
+  // approval hours later, out of context, would be worse than failing now.
+
+  /// Broadcast to everyone in the organisation, or to one school.
+  Future<int> sendAnnouncement({
+    required String title,
+    required String body,
+    String type = 'ANNOUNCEMENT',
+    String? schoolId,
+  }) async {
+    final res = await _api.post('/notifications/broadcast', {
+      'title': title,
+      'body': body,
+      'type': type,
+      'schoolId': ?schoolId,
+    }) as Map<String, dynamic>;
+    return (res['created'] as num?)?.toInt() ?? 0;
+  }
+
+  /// Pupils a Shk or Shkt registered that are still awaiting verification.
+  Future<List<PendingPupil>> pendingEnrolments() async {
+    final res = await _api.get('/students', query: {
+      'enrollmentStatus': 'PENDING',
+      'pageSize': 100,
+    }) as Map<String, dynamic>;
+    return ((res['data'] as List?) ?? const [])
+        .map((e) => PendingPupil.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
+  }
+
+  Future<void> approvePupil(String id) => _api.post('/students/$id/approve', const {});
+
+  Future<void> rejectPupil(String id, {String? reason}) =>
+      _api.post('/students/$id/reject', {'reason': ?reason});
+
+  /// Every school in the organisation, for scoping an announcement.
+  Future<List<SchoolOption>> schools() async {
+    final data = await _api.get('/schools') as List;
+    return data.map((e) => SchoolOption.fromJson((e as Map).cast<String, dynamic>())).toList();
+  }
 }

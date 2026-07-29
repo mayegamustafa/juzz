@@ -8,6 +8,7 @@ import 'attendance_screen.dart';
 import 'dashboard_screen.dart';
 import 'notifications_screen.dart';
 import 'settings_screen.dart';
+import 'admin_screen.dart';
 import 'students_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
@@ -92,20 +93,26 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     );
   }
 
-  static const _pages = [
-    DashboardScreen(),
-    StudentsScreen(),
-    AttendanceScreen(),
-    NotificationsScreen(),
-    SettingsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final unread = ref.watch(unreadCountProvider).value ?? 0;
+    final auth = ref.watch(authProvider);
+    final isAdmin = auth is AuthSignedIn && auth.user.isAdmin;
+
+    // The secretariat gets an extra destination; a Shk or Shkt never sees it.
+    // Built per-role rather than hidden, so the index never points at a tab
+    // this user has no business on.
+    final pages = <Widget>[
+      const DashboardScreen(),
+      const StudentsScreen(),
+      const AttendanceScreen(),
+      if (isAdmin) const AdminScreen(),
+      const NotificationsScreen(),
+      const SettingsScreen(),
+    ];
 
     return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
+      body: IndexedStack(index: _index.clamp(0, pages.length - 1), children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
@@ -125,6 +132,12 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
             selectedIcon: Icon(Icons.event_available_rounded),
             label: 'Attendance',
           ),
+          if (isAdmin)
+            const NavigationDestination(
+              icon: Icon(Icons.admin_panel_settings_outlined),
+              selectedIcon: Icon(Icons.admin_panel_settings_rounded),
+              label: 'Admin',
+            ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: unread > 0,

@@ -33,6 +33,14 @@ enum Gender {
   FEMALE
 }
 
+/// How a member of teaching staff is addressed. Stored rather than derived,
+/// because the honorific is a matter of how someone is known, not something to
+/// be guessed from a name.
+enum TeacherTitle {
+  SHK
+  SHKT
+}
+
 enum StudentStatus {
   ACTIVE
   INACTIVE
@@ -213,10 +221,11 @@ model DeviceToken {
 }
 
 model Teacher {
-  id        String   @id @default(cuid())
-  userId    String?  @unique
+  id        String       @id @default(cuid())
+  userId    String?      @unique
   schoolId  String
   fullName  String
+  title     TeacherTitle @default(SHK)
   phone     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
